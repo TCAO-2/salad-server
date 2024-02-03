@@ -14,6 +14,13 @@ Included features:
 - SMB service for private network use
 - Flexible and simple upgrades using Docker stacks
 
+# Repository overview
+
+| Folder name   | Description                                               |
+|---------------|-----------------------------------------------------------|
+| dev-utilities | All stuff that can be used during the development process |
+| install       | Install and update scripts                                |
+
 # Data architecture
 
 ```mermaid
