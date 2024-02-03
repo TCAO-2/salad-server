@@ -1,7 +1,7 @@
 # Install the Debian distribution from the ISO
 
 - Keep default network settings for the installation (DHCP).
-- Create a regular user called _noroot_ or another name but you will need to edit some parameters.
+- Create an admin user called _noroot_ or another name but you will need to edit some parameters.
 - Do not encrypt the system, guided partitioning, separated _/home_ _/var_ and _/tmp_ partitions.
 - Keep only standard system utilities.
 
@@ -11,9 +11,12 @@
 
 ## First execution
 - Edit the _install.sh_ script _parameters_ __core__ section:
-| Constant name    | Description                                    | Default value |
-|------------------|------------------------------------------------|---------------|
-| CORE_REGULAR_USR | The main admin user, will have sudo privileges | "noroot"      |
+
+| Constant name           | Description                                                | Default value |
+|-------------------------|------------------------------------------------------------|---------------|
+| CORE_ADMIN_USR          | Admin user, will have sudo privileges                      | "noroot"      |
+| CORE_ADMIN_USR_PASSWORD | Default password for admin if user does not already exists | "password"    |
+| CORE_IP                 | Static IP you want for the server                          |               |
 
 ```
 # As the root user.
@@ -43,14 +46,4 @@ For best security a few measures are taken:
 ```
 su - noroot
 ./install.sh
-```
-
-## Extra executions
-You can install particular components for debugging or if you want extra functionalities you may not have already installed.
-
-```
-# As the noroot user.
-./install.sh <component_name>
-# Or display the help for available components.
-./install.sh help
 ```
