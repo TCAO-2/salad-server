@@ -32,7 +32,7 @@ vim install.sh
 ```bash
 # Edit the installation script parameters.
 vim install-raid.sh
-# Setup a RAID array if you don't already have one
-# (RAID array are persistent across server re-installs).
+# Setup a RAID5 array if you don't already have one
+# (RAID5 array will be persistent across server re-installs).
 ./install-raid.sh
 ```

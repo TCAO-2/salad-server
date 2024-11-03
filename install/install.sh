@@ -12,7 +12,6 @@ set -e
 ################################################################################
 
 SSHD_PORT=22
-SSHD_SOURCE=0.0.0.0/0
 
 
 
@@ -77,9 +76,21 @@ systemctl restart sshd
 # Add sbin to root user $PATH
 echo 'PATH="/sbin:$PATH"' >> /root/.bashrc
 
-# Add color.
+# Add color to ls
 echo "
 export LS_OPTIONS='--color=auto'
 eval \"\$(dircolors)\"
 alias ls='ls \$LS_OPTIONS'
 " >> /root/.bashrc
+
+
+
+
+
+################################################################################
+# Lock noroot actions
+################################################################################
+
+# Do not allow the noroot user to go to /opt or /mnt
+# where the whole server data will be.
+chmod o-x /opt /mnt

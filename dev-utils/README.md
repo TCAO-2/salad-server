@@ -28,6 +28,7 @@ You could setup a bridge network if you want to use only one interface.
     <model type="virtio"/>
   </interface>
   ```
+- add 4 more disks of 16GiB
 - begin installation
 
 
