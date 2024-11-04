@@ -12,13 +12,13 @@ set -e
 ################################################################################
 
 # Name of the logical volume to create.
-RAID_NAME="md127"
+RAID_NAME="md0"
 
 # Name of the physical volumes to use.
 RAID_DEVICES="/dev/vdb /dev/vdc /dev/vdd /dev/vde"
 
 # RAID events will be reported using this script.
-ALERT_SCRIPT="/opt/salad-server/raid-events.sh"
+ALERT_SCRIPT="/opt/salad-server/scripts/mdadm-event.sh"
 
 
 

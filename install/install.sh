@@ -22,8 +22,7 @@ SSHD_PORT=22
 ################################################################################
 
 apt-get update -y
-apt-get install -y mlocate htop smartmontools mdadm
-#iptables-persistent ntfs-3g hdparm
+apt-get install -y mlocate htop mdadm
 
 
 
@@ -94,3 +93,20 @@ alias ls='ls \$LS_OPTIONS'
 # Do not allow the noroot user to go to /opt or /mnt
 # where the whole server data will be.
 chmod o-x /opt /mnt
+
+
+
+
+
+################################################################################
+# Configure the logger
+################################################################################
+
+mkdir /var/log/salad
+
+# logrotate configuration file.
+echo '/var/log/salad/*.log {
+    rotate 7
+    daily
+    notifempty
+}' > /etc/logrotate.d/salad
