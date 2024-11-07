@@ -22,7 +22,12 @@ SSHD_PORT=22
 ################################################################################
 
 apt-get update -y
-apt-get install -y mlocate htop mdadm
+apt-get install -y \
+mlocate htop \              # Common tools.
+mdadm \                     # Software RAID.
+unattended-upgrades \       # Host auto upgrades.
+apt-config-auto-update \    # Host auto reboot when required after upgrades.
+swaks                       # Email alerting.
 
 
 
@@ -63,6 +68,39 @@ sed -i "s/^.PermitRootLogin.*$/PermitRootLogin no/" /etc/ssh/sshd_config
 sed -i "s/^.Port.*$/Port ${SSHD_PORT}/" /etc/ssh/sshd_config
 
 systemctl restart sshd
+
+
+
+
+
+################################################################################
+# Configure unattended-upgrades
+################################################################################
+
+function active_unattended_cfg {
+    sed -i "s/^.*Unattended-Upgrade::${1} .*;$/Unattended-Upgrade::${1} \"${2}\";/" \
+    /etc/apt/apt.conf.d/50unattended-upgrades
+}
+
+# Remove unused automatically installed kernel-related packages.
+active_unattended_cfg "Remove-Unused-Kernel-Packages" "true"
+
+# Do automatic removal of newly unused dependencies after the upgrade.
+active_unattended_cfg "Remove-New-Unused-Dependencies" "true"
+
+# Do automatic removal of unused packages after the upgrade.
+active_unattended_cfg "Remove-Unused-Dependencies" "true"
+
+# Automatically reboot *WITHOUT CONFIRMATION* if
+# the file /var/run/reboot-required is found after the upgrade.
+active_unattended_cfg "Automatic-Reboot" "true"
+
+# If automatic reboot is enabled and needed, reboot at the specific
+# time instead of immediately.
+active_unattended_cfg "Automatic-Reboot-Time" "04:00"
+
+# Schedule upgrades on 03:30 everyday.
+echo "30 03 * * * /usr/bin/unattended-upgrade" | crontab -
 
 
 
