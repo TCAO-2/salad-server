@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Passing the disk ID as in /dev/disk/by-id ,
+# checks SMART data for suspicious entries that could indicate an imminent faiure.
+
 # Stop the script on error.
 set -e
 
@@ -29,6 +32,9 @@ ATA_CRITICALS=(
     197     # Current pending sector count.
     198     # Uncorrectable sector count.
 )
+
+# In hours, report an error if the last "Extended offline" selftest is older.
+ATA_LATEST_SELFTEST=1000
 
 # Metrics over these thresholds will trigger a warning.
 declare -A NVME_WARNINGS=(
@@ -61,6 +67,7 @@ function logger {
 function check_status {
     local smart_report=$1
     local smart_status=$(echo $smart_report | jq .smart_status.passed)
+    logger "${DISK_ID} smart_status: ${smart_status}" "TRACE"
     if [ $smart_status = "true" ]; then
         logger "${DISK_ID} SMART status OK" "VERB"
         return 0
@@ -72,6 +79,23 @@ function check_status {
 
 function ata_check_selftests {
     local smart_report=$1
+    local lifetime_hours=$(echo "$smart_report" | jq .power_on_time.hours)
+    logger "${DISK_ID} lifetime_hours: ${lifetime_hours}" "TRACE"
+    if echo "$smart_report" | jq .ata_smart_self_test_log.standard.table[] &> /dev/null; then
+        local most_recent_extended_test=$(echo "$smart_report" \
+        | jq '.ata_smart_self_test_log.standard.table[] | select(.type.string == "Extended offline") | .lifetime_hours' \
+        | head -n 1)
+    else
+        # No selftest have already been run.
+        local most_recent_extended_test=0
+    fi
+    logger "${DISK_ID} most_recent_extended_test: ${most_recent_extended_test}" "TRACE"
+    local delta=$((lifetime_hours - most_recent_extended_test))
+    if [ -n "$most_recent_extended_test" ] && [ $delta -le $ATA_LATEST_SELFTEST ]; then
+        logger "${DISK_ID} last \"Extended offline\" selftest was ${delta} hours ago" "VERB"
+    else
+        logger "${DISK_ID} last \"Extended offline\" selftest was ${delta} > ${ATA_LATEST_SELFTEST} hours ago" "WARN"
+    fi
     local smart_self_err=$(echo $smart_report | jq .ata_smart_self_test_log.standard.error_count_total)
     if [ $smart_self_err = "null" ] || [ $smart_self_err -eq 0 ]; then
         logger "${DISK_ID} SMART selftest OK" "VERB"
@@ -179,14 +203,15 @@ logger "${DISK_ID} protocol is ${DISK_PROTOCOL}" "VERB"
 healthy="true"
 
 if [ $DISK_PROTOCOL == "ATA" ]; then
-    check_status          "$SMART_REPORT" || healthy="false"
-    ata_check_selftests   "$SMART_REPORT" || healthy="false"
-    ata_check_attributes  "$SMART_REPORT" || healthy="false"
+    check_status            "$SMART_REPORT" || healthy="false"
+    ata_check_selftests     "$SMART_REPORT" || healthy="false"
+    ata_check_attributes    "$SMART_REPORT" || healthy="false"
 elif [ $DISK_PROTOCOL == "NVMe" ]; then
-    check_status          "$SMART_REPORT" || healthy="false"
-    nvme_check_attributes "$SMART_REPORT" || healthy="false"
+    check_status            "$SMART_REPORT" || healthy="false"
+    # There are no selftest for NVMe devices, everything is managed by the controller.
+    nvme_check_attributes   "$SMART_REPORT" || healthy="false"
 else
-    logger "${DISK_ID} is using an unknown protocol ${DISK_PROTOCOL}" "ERROR"
+    logger "${DISK_ID} is using an unknown protocol ${DISK_PROTOCOL}" "ERROR"; exit 12
 fi
 
 if [ $healthy = "true" ]; then
