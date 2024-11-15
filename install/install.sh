@@ -27,6 +27,8 @@ mlocate htop \              # Common tools.
 mdadm \                     # Software RAID.
 unattended-upgrades \       # Host auto upgrades.
 apt-config-auto-update \    # Host auto reboot when required after upgrades.
+xxhash                 \    # Non-cryptographic fast hash for data integrity check.
+smartmontools          \    # Disks monitoring.
 swaks                       # Email alerting.
 
 
