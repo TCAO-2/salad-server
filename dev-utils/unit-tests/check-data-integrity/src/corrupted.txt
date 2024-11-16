@@ -1,0 +1,2 @@
+This file has been corrupted in src.
+This file has new content but the same timestamp to simulate corruption.
