@@ -34,6 +34,7 @@ Every directory has its own README file.
 # Server administration
 
 - Connection using noroot SSH user, then switch to the root user
-- Every Docker stack is described in a compose file, use __docker compose up__ or __docker compose down__ commands to run or stop a stack
+- Every Docker stack is described in a compose file, use __docker compose up__
+or __docker compose down__ commands to run or stop a stack
 - Every host routine is triggered by CRON
 - RAID events are triggering __scripts/raid-event.sh__
