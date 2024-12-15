@@ -1,0 +1,19 @@
+services:
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./config:/config
+      - ./cache:/cache
+      - /mnt/md0p1/media:/media:ro
+    networks:
+      - bridge
+    restart: unless-stopped
+
+networks:
+  bridge:
+    driver: bridge
