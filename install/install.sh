@@ -11,6 +11,10 @@ set -e
 # Parameters
 ################################################################################
 
+IP_INTERFACE=enp1s0       # Check interfaces command: ip addr
+IP_ADDRESS=192.168.0.110
+IP_NETMASK=255.255.255.0
+IP_GATEWAY=192.168.0.254
 SSHD_PORT=22
 
 
@@ -21,15 +25,17 @@ SSHD_PORT=22
 # Install dependencies
 ################################################################################
 
+packages=(
+  "mlocate htop"            # Common tools.
+  mdadm                     # Software RAID.
+  unattended-upgrades       # Host auto upgrades.
+  apt-config-auto-update    # Host auto reboot when required after upgrades.
+  xxhash                    # Non-cryptographic fast hash for data integrity check.
+  smartmontools             # Disks monitoring.
+  swaks                     # Email alerting.
+)
 apt-get update -y
-apt-get install -y \
-mlocate htop \              # Common tools.
-mdadm \                     # Software RAID.
-unattended-upgrades \       # Host auto upgrades.
-apt-config-auto-update \    # Host auto reboot when required after upgrades.
-xxhash                 \    # Non-cryptographic fast hash for data integrity check.
-smartmontools          \    # Disks monitoring.
-swaks                       # Email alerting.
+apt-get install -y ${packages[@]}
 
 
 
@@ -150,3 +156,35 @@ echo '/var/log/salad/*.log {
     daily
     notifempty
 }' > /etc/logrotate.d/salad
+
+
+
+
+
+################################################################################
+# Configure static IP
+################################################################################
+
+cp /etc/network/interfaces /etc/network/interfaces.bak
+
+echo "\
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+source /etc/network/interfaces.d/*
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# The primary network interface
+allow-hotplug ${IP_INTERFACE}
+iface ${IP_INTERFACE} inet static
+address ${IP_ADDRESS}
+netmask ${IP_NETMASK}
+gateway ${IP_GATEWAY}
+" > /etc/network/interfaces
+
+echo "You are about to likely loose the SSH connection, reconnect with:"
+echo "ssh noroot@${IP_ADDRESS}"
+systemctl restart networking

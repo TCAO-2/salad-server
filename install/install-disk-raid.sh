@@ -11,7 +11,7 @@ set -e
 # Parameters
 ################################################################################
 
-# Name of the logical volume to create.
+# Name of the logical volume to create. The partition will be suffixed by "p1".
 RAID_NAME="md0"
 
 # Name of the physical volumes to use.

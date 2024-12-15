@@ -32,16 +32,6 @@ You could setup a bridge network if you want to use only one interface.
 - begin installation
 
 
-## Debian installation
+## Next
 
-- create a regular user called _noroot_
-- manual partitioning on vda
-  ```
-  /opt  logical 16GiB
-  /var  logical 8GiB
-  swap  logical 8GiB
-  /tmp  logical 8GiB
-  /home logical 8GiB
-  /     primary max
-  ```
-- Keep only standard system utilities
+Follow install/README.md instructions as for a real server install.
