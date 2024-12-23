@@ -8,6 +8,7 @@ Each independent service is managed by a docker stack, making it easier to manag
 | DNS provider  | duckdns    | Agent checking your public IP to keep your DNS name up to date |
 | HTTP service  | jellyfin   | Private streaming web interface for your media                 |
 | reverse proxy | caddy      | HTTPS redirects traffic to HTTP services using subdomains      |
+| file share    | samba      | Windows share for your local network                           |
 
 # Common guideline
 

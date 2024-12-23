@@ -10,4 +10,4 @@ You need to start the caddy stack after this one.
 # Configuration
 
 - Update the TZ environment in the compose file
-- Check if /media volume is pointing to the right path
+- Check in _docker-compose.yml_ that /media volume is pointing to the right path
