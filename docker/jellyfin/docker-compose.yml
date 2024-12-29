@@ -9,7 +9,7 @@ services:
     volumes:
       - ./config:/config
       - ./cache:/cache
-      - /mnt/md0p1/media:/media:ro
+      - /mnt/data/media:/media:ro
     networks:
       - bridge
     restart: unless-stopped

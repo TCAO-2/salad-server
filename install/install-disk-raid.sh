@@ -43,9 +43,9 @@ mkfs.ext4 /dev/${partition}
 # As we will only store data here, I passed the noexec option.
 mkdir /mnt/${partition}
 uuid=$(blkid | grep $partition | grep -oP '(?<= UUID=")[^"]*(?=")')
-echo "UUID=$uuid /mnt/${partition} ext4 defaults,noexec 0 2" >> /etc/fstab
+echo "UUID=$uuid /mnt/data ext4 defaults,noexec 0 2" >> /etc/fstab
 systemctl daemon-reload
-mount /mnt/${partition}
+mount /mnt/data
 
 
 

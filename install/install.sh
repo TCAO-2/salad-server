@@ -26,8 +26,9 @@ SSHD_PORT=22
 ################################################################################
 
 packages=(
-  "mlocate htop"            # Common tools.
+  "mlocate htop jq"         # Common tools.
   mdadm                     # Software RAID.
+  hdparm                    # HDD sleep.
   unattended-upgrades       # Host auto upgrades.
   apt-config-auto-update    # Host auto reboot when required after upgrades.
   xxhash                    # Non-cryptographic fast hash for data integrity check.

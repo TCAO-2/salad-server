@@ -1,37 +1,40 @@
-# Disclaimer
-
-This is a work in progress and the first usable version is not available yet.
-
 # Introduction
 
-This repository contains the source to install a minimalist home server
-running Docker with a few side features.
-- Software RAID
-- Automatic backups of Docker services
-- Automatic updates of the host and Docker services
+I used to run Open Media Vault as my server OS since it was initially a NAS.
+I gradually added extra services and created more and more custom routines
+on top of Open Media Vault and it quickly became messy.
+
+Then I decided to run a simpler and more coherent design, without specific code
+for each service and more security oriented.
+
+## Features
+
+- Software RAID for data
+- Automatic updates of the host
+- Multi transport centralized logging (console and files)
+- Flexible, start or stop any guest service on demand with Docker
+- Customizable with your own Docker stacks and routine scripts
+- Currently available stacks out of the box:
+  - samba (Windows file share)
+  - duckdns, caddy, jellyfin (Private streaming web service with HTTPS and domain name)
+
+## To do
+
+- Automatic updates and backup of the guests Docker stacks
 - Hardware and software monitoring with e-mail alerts
-- Highly customizable with your own Docker stacks
 
-# Provided Docker stacks overview
+# Repository structure
 
-You can run these stacks out of the box included in the repository.
+Each folder have it's own README file.
 
-| Name          | Description                                                |
-|---------------|------------------------------------------------------------|
-| reverse-proxy | DNS and HTTPS for web services, based on Caddy and DuckDNS |
+| Folder    | Description                                               |
+|-----------|-----------------------------------------------------------|
+| dev-utils | Development stuff, unit tests and virtualization material |
+| docker    | Guest services definition and persistent data             |
+| install   | Host installation                                         |
+| scripts   | Host side routines, backup, monitoring and so one         |
 
-# Repository overview
-
-Every directory has its own README file.
-
-| Folder name | Description                                                    |
-|-------------|----------------------------------------------------------------|
-| dev-utils   | Helper material used during development                        |
-| docker      | All Docker stacks you can run, including their persistent data |
-| install     | Server installation scripts                                    |
-| scripts     | Routine and events scripts                                     |
-
-# Server administration
+# Server administration overview
 
 - Connection using noroot SSH user, then switch to the root user
 - Every Docker stack is described in a compose file, use __docker compose up__ or __docker compose down__ commands to run or stop a stack

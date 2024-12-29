@@ -46,12 +46,17 @@ fi
 # Disks temperatures.
 devices=$(smartctl --scan | grep -o "^[^ ]*")
 for device in $devices; do
-    disk_temp=$(smartctl -aj ${device} | jq .temperature.current)
-    if [ $disk_temp -gt $DISK_THRESHOLD_ERROR ]; then
-        logger "Disk ${device} temp ${disk_temp} > ${DISK_THRESHOLD_ERROR}" "ERROR"
-    elif [ $disk_temp -gt $DISK_THRESHOLD_WARN ]; then
-        logger "Disk ${device} temp ${disk_temp} > ${DISK_THRESHOLD_WARN}" "WARN"
+    if hdparm -C $device | grep standby &> /dev/null; then
+        # Do not read the temp from a standby disk as it would wake it up.
+        logger "Disk ${device} temp NaN (in standby)" "INFO"
     else
-        logger "Disk ${device} temp ${disk_temp}" "INFO"
+        disk_temp=$(smartctl -aj ${device} | jq .temperature.current)
+        if [ $disk_temp -gt $DISK_THRESHOLD_ERROR ]; then
+            logger "Disk ${device} temp ${disk_temp} > ${DISK_THRESHOLD_ERROR}" "ERROR"
+        elif [ $disk_temp -gt $DISK_THRESHOLD_WARN ]; then
+            logger "Disk ${device} temp ${disk_temp} > ${DISK_THRESHOLD_WARN}" "WARN"
+        else
+            logger "Disk ${device} temp ${disk_temp}" "INFO"
+        fi
     fi
 done

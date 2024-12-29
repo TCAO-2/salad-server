@@ -4,12 +4,13 @@
 - manual partitioning on the OS drive,
 here is a sample configuration for a 256GB drive, your needs may vary:
   ```
-  swap  logical 8GiB
-  /opt  logical 16GiB
-  /var  logical 16GiB
-  /tmp  logical 16GiB
-  /home logical 16GiB
-  /     primary max
+  efi    efi     100MiB
+  swap   swap    16GiB
+  /opt   ext4    96GiB    # Docker services data
+  /var   ext4    16GiB    # Logs
+  /tmp   ext4    48GiB    # Docker services backup temporary directory
+  /home  ext4    48GiB    # SFTP temporary directory
+  /      ext4    max
   ```
 - choose a mirror for aptitude
 - software selection:
@@ -59,7 +60,19 @@ vim install.sh
 ./install.sh
 ```
 
-## Optional install, data RAID
+## Optional install, existing data RAID
+
+```bash
+# Add the data mountpoint in /etc/fstab
+(/etc/fstab)               UUID=$uuid /mnt/data ext4 defaults,noexec 0 2
+# Add events alerts in /etc/mdadm/mdadm.conf
+(/etc/mdadm/mdadm.conf)    PROGRAM /opt/salad-server/scripts/mdadm-event.sh
+# Mount the array.
+systemctl daemon-reload
+mount /mnt/data
+```
+
+## Optional install, new data RAID
 
 ```bash
 # Edit the installation script parameters.
@@ -69,6 +82,20 @@ vim install-disk-raid.sh
 # Setup a data RAID5 array if you don't already have one
 # (RAID5 array will be persistent across server re-installs).
 ./install-disk-raid.sh
+```
+
+## Optional install, HDD sleep
+
+```bash
+# For each physical HDD.
+hdparm --yes-i-know-what-i-am-doing -s 1 /dev/sdX
+# Value provided must be in [1,255] and is 5x the seconds to wait before sleep.
+# Here 120 corresponds to 10 minutes.
+hdparm -S 120 /dev/sdX
+# Add the standby in /etc/hdparm.conf file to make it persistent.
+/dev/sdX {
+    spindown_time = 120
+}
 ```
 
 # Maintenance, as root

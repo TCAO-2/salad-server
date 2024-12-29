@@ -5,6 +5,7 @@ services:
     ports:
       - 445:445
     volumes:
-      - /mnt/md0p1:/storage
+      - /mnt/data:/storage
       - ./smb.conf:/etc/samba/smb.conf:ro
       - ./users.conf:/etc/samba/users.conf:ro
+    restart: unless-stopped
