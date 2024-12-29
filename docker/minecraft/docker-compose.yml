@@ -1,0 +1,16 @@
+services:
+    minecraft:
+      image: itzg/minecraft-server:latest
+      container_name: minecraft
+      environment:
+        EULA: "TRUE"
+        VERSION: "1.21"
+        MEMORY: "16G"
+        SEED: "167826389359076639"
+      ports:
+        - 25565:25565/tcp
+      volumes:
+        - ./data:/data
+      stdin_open: true
+      tty: true
+      restart: unless-stopped
