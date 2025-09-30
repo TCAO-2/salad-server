@@ -59,10 +59,10 @@ NC="\033[0m"                # NO COLOR
 
 # Default minimum log levels depending on the transport.
 if [ -z $LOG_LEVEL_CONSOLE ]; then
-    LOG_LEVEL_CONSOLE="INFO"
+    LOG_LEVEL_CONSOLE="VERB"
 fi
 if [ -z $LOG_LEVEL_FILE ]; then
-    LOG_LEVEL_FILE="INFO"
+    LOG_LEVEL_FILE="TRACE"
 fi
 
 
@@ -87,7 +87,7 @@ function echo_file {
 
     # Check if the log level is within the console display threshold
     if [[ ${LOG_LEVELS[$LOG_LEVEL]} -ge ${LOG_LEVELS[$LOG_LEVEL_FILE]} ]]; then
-        echo -e "${LOG_COLORS[$LOG_LEVEL]}${message}${NC}" >> $LOG_FILE
+        echo "${message}" >> $LOG_FILE
     fi
 }
 
@@ -106,4 +106,4 @@ timestamp=$(date "+%Y-%m-%d %H:%M:%S")
 echo_console "[${timestamp} ${LOG_LEVEL}]\t${LOG_MESSAGE}"
 
 # File transport.
-echo_file "[${timestamp} ${LOG_LEVEL}]\t${LOG_MESSAGE}"
+echo_file "[${timestamp} ${LOG_LEVEL}] ${LOG_MESSAGE}"
