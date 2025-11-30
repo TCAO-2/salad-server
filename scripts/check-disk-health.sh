@@ -1,7 +1,16 @@
 #!/bin/bash
 
-# Passing the disk ID as in /dev/disk/by-id ,
-# checks SMART data for suspicious entries that could indicate an imminent faiure.
+# Passing the device path e.g. /dev/sda
+# or any symlink pointing to a device e.g. /dev/disk/by-id/nvme-WD_Blue_x .
+#
+# Checks SMART data for suspicious entries that could indicate an imminent faiure.
+#
+# Return code 0 if the disk health is OK.
+# Return code 1 if the disk health is KO.
+# Return code 1x if there was an execution error during the test.
+
+
+# You can use "smartctl --scan" to list all supported devices.
 
 # Stop the script on error.
 set -e
@@ -14,7 +23,7 @@ set -e
 # Parameters
 ################################################################################
 
-DISK_ID=$1 # Disk ID as in /dev/disk/by-id
+DEVICE=$1 # Disk device e.g. /dev/sda or /dev/disk/by-id/nvme-WD_Blue_x .
 
 
 
@@ -67,12 +76,12 @@ function logger {
 function check_status {
     local smart_report=$1
     local smart_status=$(echo $smart_report | jq .smart_status.passed)
-    logger "${DISK_ID} smart_status: ${smart_status}" "TRACE"
+    logger "${DEVICE} smart_status: ${smart_status}" "TRACE"
     if [ $smart_status = "true" ]; then
-        logger "${DISK_ID} SMART status OK" "VERB"
+        logger "${DEVICE} SMART status OK" "VERB"
         return 0
     else
-        logger "${DISK_ID} SMART status KO" "ERROR"
+        logger "${DEVICE} SMART status KO" "ERROR"
         return 1
     fi
 }
@@ -80,7 +89,7 @@ function check_status {
 function ata_check_selftests {
     local smart_report=$1
     local lifetime_hours=$(echo "$smart_report" | jq .power_on_time.hours)
-    logger "${DISK_ID} lifetime_hours: ${lifetime_hours}" "TRACE"
+    logger "${DEVICE} lifetime_hours: ${lifetime_hours}" "TRACE"
     if echo "$smart_report" | jq .ata_smart_self_test_log.standard.table[] &> /dev/null; then
         local most_recent_extended_test=$(echo "$smart_report" \
         | jq '.ata_smart_self_test_log.standard.table[] | select(.type.string == "Extended offline") | .lifetime_hours' \
@@ -89,19 +98,19 @@ function ata_check_selftests {
         # No selftest have already been run.
         local most_recent_extended_test=0
     fi
-    logger "${DISK_ID} most_recent_extended_test: ${most_recent_extended_test}" "TRACE"
+    logger "${DEVICE} most_recent_extended_test: ${most_recent_extended_test}" "TRACE"
     local delta=$((lifetime_hours - most_recent_extended_test))
     if [ -n "$most_recent_extended_test" ] && [ $delta -le $ATA_LATEST_SELFTEST ]; then
-        logger "${DISK_ID} last \"Extended offline\" selftest was ${delta} hours ago" "VERB"
+        logger "${DEVICE} last \"Extended offline\" selftest was ${delta} hours ago" "VERB"
     else
-        logger "${DISK_ID} last \"Extended offline\" selftest was ${delta} > ${ATA_LATEST_SELFTEST} hours ago" "WARN"
+        logger "${DEVICE} last \"Extended offline\" selftest was ${delta} > ${ATA_LATEST_SELFTEST} hours ago" "WARN"
     fi
     local smart_self_err=$(echo $smart_report | jq .ata_smart_self_test_log.standard.error_count_total)
     if [ $smart_self_err = "null" ] || [ $smart_self_err -eq 0 ]; then
-        logger "${DISK_ID} SMART selftest OK" "VERB"
+        logger "${DEVICE} SMART selftest OK" "VERB"
         return 0
     else
-        logger "${DISK_ID} SMART selftest error count: ${smart_self_err}" "ERROR"
+        logger "${DEVICE} SMART selftest error count: ${smart_self_err}" "ERROR"
         return 1
     fi
 }
@@ -112,7 +121,7 @@ function ata_check_attributes {
     local smart_attributes=$(echo $smart_report | jq .ata_smart_attributes.table)
     local smart_json=$(echo $smart_attributes | jq -c '.[] | {id, name, value, worst, thresh, raw_value: .raw.value}')
     for attribute in $smart_json; do
-        logger "${DISK_ID} SMART attribute ${attribute}" "TRACE"
+        logger "${DEVICE} SMART attribute ${attribute}" "TRACE"
         id=$(echo $attribute | jq '.id')
         name=$(echo $attribute | jq -r '.name')
         value=$(echo $attribute | jq '.value')
@@ -120,23 +129,23 @@ function ata_check_attributes {
         thresh=$(echo $attribute | jq '.thresh')
         raw_value=$(echo $attribute | jq '.raw_value')
         if [ $value -le $thresh ]; then
-            logger "${DISK_ID} SMART bad current attribute: ${id} ${name} ${worst} <= ${thresh}" "ERROR"
+            logger "${DEVICE} SMART bad current attribute: ${id} ${name} ${worst} <= ${thresh}" "ERROR"
             _healthy="false"
         elif [ $worst -le $thresh ]; then
             # If the current value is above the threshold
             # but have been below previously, report a warning only.
-            logger "${DISK_ID} SMART bad worst attribute: ${id} ${name} ${worst} <= ${thresh}" "WARN"
+            logger "${DEVICE} SMART bad worst attribute: ${id} ${name} ${worst} <= ${thresh}" "WARN"
         fi
         if [ $raw_value -ne 0 ] && [[ $(echo "${ATA_CRITICALS[@]}" | fgrep -w $id) ]]; then
-            logger "${DISK_ID} SMART bad raw.value attribute: ${id} ${name} ${raw_value}" "ERROR"
+            logger "${DEVICE} SMART bad raw.value attribute: ${id} ${name} ${raw_value}" "ERROR"
             _healthy="false"
         fi
     done
     if [ $_healthy = "true" ];then
-        logger "${DISK_ID} SMART attributes OK" "VERB"
+        logger "${DEVICE} SMART attributes OK" "VERB"
         return 0
     else
-        logger "${DISK_ID} SMART attributes KO" "ERROR"
+        logger "${DEVICE} SMART attributes KO" "ERROR"
         return 1
     fi
 }
@@ -149,19 +158,19 @@ function nvme_check_attributes {
         local value=$(echo "$smart_attributes" | jq -r ".$name")
         local warning_threshold=${NVME_WARNINGS[$name]}
         local critical_threshold=${NVME_CRITICALS[$name]}
-        logger "${DISK_ID} SMART attribute {\"name\":\"${name}\",\"value\":${value}}" "TRACE"
+        logger "${DEVICE} SMART attribute {\"name\":\"${name}\",\"value\":${value}}" "TRACE"
         if [[ -n $critical_threshold && $value -gt $critical_threshold ]]; then
-            logger "${DISK_ID} SMART bad attribute: ${name} ${value} > ${critical_threshold}" "ERROR"
+            logger "${DEVICE} SMART bad attribute: ${name} ${value} > ${critical_threshold}" "ERROR"
             _healthy=false
         elif [[ -n $warning_threshold && $value -gt $warning_threshold ]]; then
-            logger "${DISK_ID} SMART bad attribute: ${name} ${value} > ${warning_threshold}" "WARN"
+            logger "${DEVICE} SMART bad attribute: ${name} ${value} > ${warning_threshold}" "WARN"
         fi
     done
     if [ $_healthy = "true" ];then
-        logger "${DISK_ID} SMART attributes OK" "VERB"
+        logger "${DEVICE} SMART attributes OK" "VERB"
         return 0
     else
-        logger "${DISK_ID} SMART attributes KO" "ERROR"
+        logger "${DEVICE} SMART attributes KO" "ERROR"
         return 1
     fi
 }
@@ -174,28 +183,31 @@ function nvme_check_attributes {
 # Main
 ################################################################################
 
-# Disk detection.
-DEVICE="/dev/disk/by-id/${DISK_ID}"
+# Checks that we are using the root account.
+if ! [ "$(whoami)" == "root" ]; then
+    logger "Must be root for using smartctl." "ERROR"; exit 12
+fi
 
-{
-    readlink $DEVICE > /dev/null
-} || {
-    logger "${DISK_ID} missing" "ERROR"; exit 10
-}
-REALPATH=$(realpath "/dev/disk/by-id/${DISK_ID}")
-logger "${DISK_ID} detected as ${REALPATH}" "VERB"
-
-
+# Check that the disk exists.
+DEVICES=$(smartctl --scan -j | jq -r .devices[].name)
+if ! [[ ${DEVICES[@]} =~ $(realpath "${DEVICE}") ]]; then
+    logger "${DEVICE} is missing or not a device" "ERROR"; exit 11
+fi
 
 # SMART overview.
 {
     SMART_REPORT=$(smartctl -aj $DEVICE)
+    # Get the disk model name and S/N for physical identification.
+    MODEL_NAME=$(echo $SMART_REPORT | jq -r .model_name)
+    SERIAL_NUMBER=$(echo $SMART_REPORT | jq -r .serial_number)
     # Get the disk protocol (ATA or NVMe).
     DISK_PROTOCOL=$(echo $SMART_REPORT | jq -r .device.protocol)
 } || {
-    logger "${DISK_ID} SMART not enabled" "ERROR"; exit 11
+    logger "${DEVICE} SMART not enabled" "ERROR"; exit 12
 }
-logger "${DISK_ID} protocol is ${DISK_PROTOCOL}" "VERB"
+
+# Overview entry log.
+logger "${DEVICE} detected as ${MODEL_NAME} ${SERIAL_NUMBER} ${DISK_PROTOCOL}" "VERB"
 
 
 
@@ -211,11 +223,12 @@ elif [ $DISK_PROTOCOL == "NVMe" ]; then
     # There are no selftest for NVMe devices, everything is managed by the controller.
     nvme_check_attributes   "$SMART_REPORT" || healthy="false"
 else
-    logger "${DISK_ID} is using an unknown protocol ${DISK_PROTOCOL}" "ERROR"; exit 12
+    logger "${DEVICE} is using an unknown protocol ${DISK_PROTOCOL}" "ERROR"; exit 13
 fi
 
 if [ $healthy = "true" ]; then
-    logger "${DISK_ID} health OK" "INFO"
+    logger "${DEVICE} health OK" "INFO"
 else
-    logger "${DISK_ID} health KO" "ERROR"
+    logger "${DEVICE} health KO" "ERROR"
+    exit 1
 fi
