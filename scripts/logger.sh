@@ -29,6 +29,8 @@ LOG_NAME=$1     # Name of the log entry (will be in the log file name).
 LOG_MESSAGE=$2  # Log entry.
 LOG_LEVEL=$3    # Log entry level.
 
+if [[ -z "$LOG_LEVEL" ]]; then LOG_LEVEL="ERROR"; fi # Default loglevel if missing.
+
 
 
 

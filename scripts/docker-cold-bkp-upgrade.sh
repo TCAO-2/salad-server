@@ -28,7 +28,7 @@ STACK_NAME=$1 # Same name as the sub-directory in /opt/salad-server/docker
 TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
 SRC_DIR="/opt/salad-server/docker/${STACK_NAME}"
 TMP_DIR="/tmp/salad-server"
-BKP_DIR="/mnt/md0p1/backup/${STACK_NAME}"
+BKP_DIR="/mnt/data/salad-server/${STACK_NAME}"
 BKP_NAME="${STACK_NAME}_${TIMESTAMP}"
 DOCKER_IMG_DIR="/var/lib/docker"
 
@@ -121,6 +121,8 @@ done
 logger "Pull newer images if available upgrade..." "VERB"
 docker compose pull
 
+start_time=$(date +%s)
+
 logger "Stopping the stack..." "VERB"
 docker compose down
 
@@ -130,16 +132,8 @@ tar -cf "${TMP_DIR}/${BKP_NAME}/data.tar" -C "${SRC_DIR}" .
 logger "Starting the stack..." "VERB"
 docker compose up -d
 
-logger "Archiving ${TMP_DIR}/${BKP_NAME} -> ${BKP_DIR}/${BKP_NAME}.tgz ..." "VERB"
-cd "${TMP_DIR}/${BKP_NAME}"
-tar -czf "${BKP_DIR}/${BKP_NAME}.tgz" -C "${TMP_DIR}/${BKP_NAME}" .
-
-logger "Removing temporary data ${TMP_DIR}/${BKP_NAME} ..." "VERB"
-cd "${SRC_DIR}"
-rm -r "${TMP_DIR}/${BKP_NAME}"
-
-logger "Removing unused Docker images..." "VERB"
-docker image prune -af
+end_time=$(date +%s)
+delta_time=$(($end_time - $start_time))
 
 # INFO overview log.
 upgraded_images=$(docker compose images --format json)
@@ -151,10 +145,24 @@ for current_image in $(echo $current_images | jq -c '.[]'); do
         upgraded_repository=$(echo $upgraded_image | jq -r '.Repository')
         if [ "$current_repository" = "$upgraded_repository" ]; then
             if [ "$current_id" = "$upgraded_id" ]; then
-                logger "$current_repository restarted using ${current_id:7:12} ." "INFO"
+                logger "$current_repository restarted using same version ${current_id:7:12} (downtime ${delta_time}s)." "INFO"
             else
-                logger "$current_repository restarted after upgrade ${current_id:7:12} -> ${upgraded_id:7:12} ." "INFO"
+                logger "$current_repository restarted after upgrade ${current_id:7:12} -> ${upgraded_id:7:12} (downtime ${delta_time}s)." "INFO"
             fi
         fi
     done
 done
+
+logger "Archiving ${TMP_DIR}/${BKP_NAME} -> ${BKP_DIR}/${BKP_NAME}.tgz ..." "VERB"
+cd "${TMP_DIR}/${BKP_NAME}"
+tar -czf "${BKP_DIR}/${BKP_NAME}.tgz" -C "${TMP_DIR}/${BKP_NAME}" .
+
+bkp_size=$(stat -c %s ${BKP_DIR}/${BKP_NAME}.tgz | numfmt --to=iec)
+logger "Backup archived ${BKP_DIR}/${BKP_NAME}.tgz (${bkp_size})." "INFO"
+
+logger "Removing temporary data ${TMP_DIR}/${BKP_NAME} ..." "VERB"
+cd "${SRC_DIR}"
+rm -r "${TMP_DIR}/${BKP_NAME}"
+
+logger "Removing unused Docker images..." "VERB"
+docker image prune -af
