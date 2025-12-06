@@ -3,6 +3,15 @@
 # Stop the script on error.
 set -e
 
+function logger {
+    local message=$1
+    local loglevel=$2
+    /opt/salad-server/scripts/logger.sh "mem-usage" "$message" "$loglevel" \
+    || echo "[${loglevel}] ${message}"
+}
+
+trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
+
 
 
 
@@ -21,12 +30,6 @@ THRESHOLD_ERROR=90
 ################################################################################
 # Main
 ################################################################################
-
-function logger {
-    message=$1
-    loglevel=$2
-    /opt/salad-server/scripts/logger.sh "mem-usage" "$message" "$loglevel"
-}
 
 # Loop over line results looking for threshold exceeding.
 free | grep -v "total" | while read line; do

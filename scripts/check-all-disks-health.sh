@@ -5,6 +5,15 @@
 # Stop the script on error.
 set -e
 
+function logger {
+    local message=$1
+    local loglevel=$2
+    /opt/salad-server/scripts/logger.sh "all-disk-health" "$message" "$loglevel" \
+    || echo "[${loglevel}] ${message}"
+}
+
+trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
+
 
 
 

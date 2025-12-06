@@ -15,6 +15,15 @@
 # Stop the script on error.
 set -e
 
+function logger {
+    local message=$1
+    local loglevel=$2
+    /opt/salad-server/scripts/logger.sh "disk-health" "$message" "$loglevel" \
+    || echo "[${loglevel}] ${message}"
+}
+
+trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
+
 
 
 
@@ -66,12 +75,6 @@ declare -A NVME_CRITICALS=(
 ################################################################################
 # Helper functions
 ################################################################################
-
-function logger {
-    message=$1
-    loglevel=$2
-    /opt/salad-server/scripts/logger.sh "disk-health" "$message" "$loglevel"
-}
 
 function check_status {
     local smart_report=$1

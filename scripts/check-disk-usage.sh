@@ -3,6 +3,15 @@
 # Stop the script on error.
 set -e
 
+function logger {
+    local message=$1
+    local loglevel=$2
+    /opt/salad-server/scripts/logger.sh "disk-usage" "$message" "$loglevel" \
+    || echo "[${loglevel}] ${message}"
+}
+
+trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
+
 
 
 
@@ -21,12 +30,6 @@ THRESHOLD_ERROR=90
 ################################################################################
 # Main
 ################################################################################
-
-function logger {
-    message=$1
-    loglevel=$2
-    /opt/salad-server/scripts/logger.sh "disk-usage" "$message" "$loglevel"
-}
 
 # Get physical file system usage.
 file_sys_usage="df -x devtmpfs -x tmpfs -x overlay --output=pcent,target"

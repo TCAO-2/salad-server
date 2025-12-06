@@ -3,6 +3,15 @@
 # Stop the script on error.
 set -e
 
+function logger {
+    local message=$1
+    local loglevel=$2
+    /opt/salad-server/scripts/logger.sh "temperatures" "$message" "$loglevel" \
+    || echo "[${loglevel}] ${message}"
+}
+
+trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
+
 
 
 
@@ -24,12 +33,6 @@ DISK_THRESHOLD_ERROR=60
 ################################################################################
 # Main
 ################################################################################
-
-function logger {
-    message=$1
-    loglevel=$2
-    /opt/salad-server/scripts/logger.sh "temperatures" "$message" "$loglevel"
-}
 
 # CPU temperatures.
 cpu_temp=$(cat /sys/class/thermal/thermal_zone*/temp \

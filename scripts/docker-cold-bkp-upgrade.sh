@@ -7,6 +7,15 @@
 # Stop the script on error.
 set -e
 
+function logger {
+    local message=$1
+    local loglevel=$2
+    /opt/salad-server/scripts/logger.sh "docker-cold-bkp-upgrade" "$message" "$loglevel" \
+    || echo "[${loglevel}] ${message}"
+}
+
+trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
+
 
 
 
@@ -40,12 +49,6 @@ TIMEOUT_HEALTHCHECK=120
 ################################################################################
 # Functions
 ################################################################################
-
-function logger {
-    local message=$1
-    local loglevel=$2
-    /opt/salad-server/scripts/logger.sh "docker-cold-bkp-upgrade" "$message" "$loglevel"
-}
 
 function get_docker_image_name_from_hash {
     local hash=$1

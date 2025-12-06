@@ -9,6 +9,15 @@
 # Stop the script on error.
 set -e
 
+function logger {
+    local message=$1
+    local loglevel=$2
+    /opt/salad-server/scripts/logger.sh "create-data-integrity-report" "$message" "$loglevel" \
+    || echo "[${loglevel}] ${message}"
+}
+
+trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
+
 
 
 
@@ -41,20 +50,6 @@ if [[ -z $SRC_DIR ]] || [[ -z $FILE_REPORT ]]; then
     >&2 echo "-d (source directory) and -f (report file) are required."
     usage
 fi
-
-
-
-
-
-################################################################################
-# Helper functions
-################################################################################
-
-function logger {
-    message=$1
-    loglevel=$2
-    /opt/salad-server/scripts/logger.sh "data-integrity-check" "$message" "$loglevel"
-}
 
 
 
