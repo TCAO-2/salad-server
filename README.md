@@ -12,27 +12,40 @@ for each service and more security oriented.
 - Software RAID for data
 - Automatic updates of the host
 - Multi transport centralized logging (console and files)
-- Flexible, start or stop any guest service on demand with Docker
+- Flexible, start stop, update, rollback any guest service on demand with Docker
 - Customizable with your own Docker stacks and routine scripts
-- Currently available stacks out of the box:
-  - samba (Windows file share)
-  - duckdns, caddy, jellyfin (Private streaming web service with HTTPS and domain name)
+- Currently available Docker stacks out of the box:
+  - SMB (Windows file share)
+  - DuckDNS (DNS agent)
+  - Caddy (HTTPS reverse proxy)
+  - Jellyfin (Private streaming web service)
+  - Minecraft server
 
 ## To do
 
 - Automatic updates and backup of the guests Docker stacks
 - Hardware and software monitoring with e-mail alerts
 
-# Repository structure
+# Directory structure
 
+```
+/opt
+  |- salad-server           (this Git repository)
+  |   |- dev-utils          (development stuff)
+  |   |- docker             (run docker stacks)
+  |   |- docker-reference   (reference docker stacks)
+  |   |- install            (host installation)
+  |   `- scripts            (host routines and helper scripts)
+  |
+  `- salad-server-data      (run Docker stacks)
+
+/var/log
+  `- salad-server           (files transport logs)
+
+/mnt/data                   (data directory i.e. probably a RAID array)
+  `- salad-server           (Docker stacks backups)
+```
 Each folder have it's own README file.
-
-| Folder    | Description                                               |
-|-----------|-----------------------------------------------------------|
-| dev-utils | Development stuff, unit tests and virtualization material |
-| docker    | Guest services definition and persistent data             |
-| install   | Host installation                                         |
-| scripts   | Host side routines, backup, monitoring and so one         |
 
 # Server administration overview
 
