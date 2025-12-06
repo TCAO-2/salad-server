@@ -106,8 +106,14 @@ function ata_check_selftests {
         logger "${DEVICE} last \"Extended offline\" selftest was ${delta} > ${ATA_LATEST_SELFTEST} hours ago" "WARN"
     fi
     local smart_self_err=$(echo $smart_report | jq .ata_smart_self_test_log.standard.error_count_total)
+    # If a newer successful selftest is run, past failed selftest becomes outdated.
+    local smart_self_err_outdated=$(echo $smart_report | jq .ata_smart_self_test_log.standard.error_count_outdated)
     if [ $smart_self_err = "null" ] || [ $smart_self_err -eq 0 ]; then
         logger "${DEVICE} SMART selftest OK" "VERB"
+        return 0
+    elif [ $smart_self_err -eq $smart_self_err_outdated ]; then
+        # If there is only outdated selftest error (all new selftests are passing), only log a warning.
+        logger "${DEVICE} SMART selftest error count (outdated): ${smart_self_err}" "WARN"
         return 0
     else
         logger "${DEVICE} SMART selftest error count: ${smart_self_err}" "ERROR"
