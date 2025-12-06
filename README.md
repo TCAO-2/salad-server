@@ -9,7 +9,7 @@ easy to maintain, to update, to rollback and security oriented.
 
 ## Features
 
-- Software RAID for data  (mdamdm)
+- Software RAID for data (mdadm)
 - Automatic updates of the host (unattended-upgrades)
 - Multi transport centralized logging (console and files)
 - Simply start, stop, update, rollback any guest service on demand with Docker

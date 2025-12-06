@@ -31,6 +31,7 @@ TMP_DIR="/tmp/salad-server"
 BKP_DIR="/mnt/data/salad-server/${STACK_NAME}"
 BKP_NAME="${STACK_NAME}_${TIMESTAMP}"
 DOCKER_IMG_DIR="/var/lib/docker"
+TIMEOUT_HEALTHCHECK=120
 
 
 
@@ -41,26 +42,74 @@ DOCKER_IMG_DIR="/var/lib/docker"
 ################################################################################
 
 function logger {
-    message=$1
-    loglevel=$2
+    local message=$1
+    local loglevel=$2
     /opt/salad-server/scripts/logger.sh "docker-cold-bkp-upgrade" "$message" "$loglevel"
 }
 
 function get_docker_image_name_from_hash {
-    hash=$1
+    local hash=$1
     docker image ls --no-trunc | grep $hash | awk '{print $1}'
 }
 
 function check_space_left {
-    path=$1
-    required_space=$2
-    available_space=$(df --output=avail -B1 "${path}" | awk 'NR==2')
+    local path=$1
+    local required_space=$2
+    local available_space=$(df --output=avail -B1 "${path}" | awk 'NR==2')
     if (( available_space >= required_space )); then
         logger "Enough available space in ${path}: ${required_space}/${available_space}" "TRACE"
     else
         logger "Not enough available space in ${path}: ${required_space}/${available_space}" "ERROR"
         exit 11
     fi
+}
+
+function is_unhealthy_container_in_stack {
+    # Containers without healthcheck are considered healthy as long as they are running.
+    local containers_not_running=$(docker compose ps --format '{{.State}}' \
+        | grep -iE "created|paused|restarting|exited|removing|dead")
+    local containers_unhealthy=$(docker compose ps --format '{{.Status}}' \
+        | grep -iE "starting|unhealthy")
+    if [[ -z "$containers_not_running" ]] && [[ -z "$containers_unhealthy" ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+function wait_until_the_stack_is_healthy {
+    local time_elapsed=0
+    while is_unhealthy_container_in_stack; do
+        sleep 1
+        time_elapsed=$((time_elapsed+1))
+        if [ $time_elapsed -gt $TIMEOUT_HEALTHCHECK ]; then
+            logger "${STACK_NAME} stack restart timed out after ${TIMEOUT_HEALTHCHECK}s." "ERROR"
+            return 0
+        fi
+    done
+}
+
+function log_restarted_stack {
+    local _current_images=$1
+    local _start_time=$2
+    local end_time=$(date +%s)
+    local delta_time=$(($end_time - $_start_time))
+    local upgraded_images=$(docker compose images --format json)
+    for current_image in $(echo $_current_images | jq -c '.[]'); do
+        local current_id=$(echo $current_image | jq -r '.ID')
+        local current_repository=$(echo $current_image | jq -r '.Repository')
+        for upgraded_image in $(echo $upgraded_images | jq -c '.[]'); do
+            local upgraded_id=$(echo $upgraded_image | jq -r '.ID')
+            local upgraded_repository=$(echo $upgraded_image | jq -r '.Repository')
+            if [ "$current_repository" = "$upgraded_repository" ]; then
+                if [ "$current_id" = "$upgraded_id" ]; then
+                    logger "$current_repository restarted using same version ${current_id:7:12} (downtime ${delta_time}s)." "INFO"
+                else
+                    logger "$current_repository restarted after upgrade ${current_id:7:12} -> ${upgraded_id:7:12} (downtime ${delta_time}s)." "INFO"
+                fi
+            fi
+        done
+    done
 }
 
 
@@ -132,26 +181,9 @@ tar -cf "${TMP_DIR}/${BKP_NAME}/data.tar" -C "${SRC_DIR}" .
 logger "Starting the stack..." "VERB"
 docker compose up -d
 
-end_time=$(date +%s)
-delta_time=$(($end_time - $start_time))
-
-# INFO overview log.
-upgraded_images=$(docker compose images --format json)
-for current_image in $(echo $current_images | jq -c '.[]'); do
-    current_id=$(echo $current_image | jq -r '.ID')
-    current_repository=$(echo $current_image | jq -r '.Repository')
-    for upgraded_image in $(echo $upgraded_images | jq -c '.[]'); do
-        upgraded_id=$(echo $upgraded_image | jq -r '.ID')
-        upgraded_repository=$(echo $upgraded_image | jq -r '.Repository')
-        if [ "$current_repository" = "$upgraded_repository" ]; then
-            if [ "$current_id" = "$upgraded_id" ]; then
-                logger "$current_repository restarted using same version ${current_id:7:12} (downtime ${delta_time}s)." "INFO"
-            else
-                logger "$current_repository restarted after upgrade ${current_id:7:12} -> ${upgraded_id:7:12} (downtime ${delta_time}s)." "INFO"
-            fi
-        fi
-    done
-done
+logger "Wait until the stack is healthy..." "VERB"
+wait_until_the_stack_is_healthy
+log_restarted_stack $current_images $start_time
 
 logger "Archiving ${TMP_DIR}/${BKP_NAME} -> ${BKP_DIR}/${BKP_NAME}.tgz ..." "VERB"
 cd "${TMP_DIR}/${BKP_NAME}"
