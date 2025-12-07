@@ -58,6 +58,9 @@ vim install.sh
 
 # Execute the installation script.
 ./install.sh
+
+# Edit the crontab based on the configuration sample in the script README.
+crontab -e
 ```
 
 ## Optional install, existing data RAID

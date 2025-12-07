@@ -119,24 +119,55 @@ flowchart LR
         cron(cron)
     end
 
-    subgraph /opt/salad/scripts
+    subgraph /opt/salad-server/scripts
         mdadm-events
-        start-disk-selftest
-        check-disk-health
+        smartctl-test[smartctl --test=long]
+        check-all-disks-health
         check-disk-usage
         check-mem-usage
         check-temperatures
         logger
     end
 
-    logrotate -- daily --> A@{ shape: notch-rect, label: "/var/log/salad" }
-    logger -->  A@{ shape: notch-rect, label: "/var/log/salad" }
+    subgraph /var/log
+        salad-server-log@{ shape: notch-rect, label: "salad-server" }
+        unattended-upgrade-log@{ shape: notch-rect, label: "unattended-upgrade" }
+    end
+
+    logrotate -- daily --> salad-server-log
+    logger -->  salad-server-log
 
     mdadm -- on RAID event --> mdadm-events --> logger
 
-    cron -- monthly --> start-disk-selftest --> logger
-    cron -- monthly --> check-disk-health --> logger
+    cron -- monthly --> smartctl-test --> logger
+    cron -- monthly --> check-all-disks-health --> logger
     cron -- daily --> check-disk-usage --> logger
     cron -- hourly --> check-mem-usage --> logger
     cron -- hourly --> check-temperatures --> logger
+    cron --daily --> unattended-upgrade --> unattended-upgrade-log
+```
+
+## Sample crontab
+
+```bash
+# Host security updates and restart if needed - everyday 3:30 AM
+30 03 * * * /usr/bin/unattended-upgrade
+
+# Disks SMART extended self-test - once a month 5:00 AM - expect 10h duration
+00 05 01 * * /usr/sbin/smartctl --test=long /dev/sda
+00 05 02 * * /usr/sbin/smartctl --test=long /dev/sdb
+00 05 03 * * /usr/sbin/smartctl --test=long /dev/sdc
+00 05 04 * * /usr/sbin/smartctl --test=long /dev/sdd
+
+# Disks SMART health evaluation - once a month 5:00 AM
+00 05 10 * * /opt/salad-server/scripts/check-all-disk-health.sh
+
+# Disks usage - everyday 4:30 AM
+30 04 * * * /opt/salad-server/scripts/check-disk-usage.sh
+
+# Memory usage - everyday 4:40 AM
+40 04 * * * /opt/salad-server/scripts/check-mem-usage.sh
+
+# Temperatures - Every hour
+02 * * * * /opt/salad-server/scripts/check-temperatures.sh
 ```
