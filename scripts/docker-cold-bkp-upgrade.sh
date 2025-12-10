@@ -16,6 +16,19 @@ function logger {
 
 trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
 
+function show_help() {
+    echo "Usage:"
+    echo "  ./docker-cold-bkp-upgrade [-h] [-u] <str>"
+    echo "Examples:"
+    echo "  ./docker-cold-bkp-upgrade -u caddy"
+    echo "  ./docker-cold-bkp-upgrade minecraft"
+    echo "Mandatory:"
+    echo "  <str> Stack name (folder name in /opt/salad-server/docker/)"
+    echo "Options:"
+    echo "  -h, --help                Display this help message."
+    echo "  -u, --only-on-upgrade     Do not do anything if no upgrade is available."
+}
+
 
 
 
@@ -24,7 +37,42 @@ trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${
 # Parameters
 ################################################################################
 
-STACK_NAME=$1 # Same name as the sub-directory in /opt/salad-server/docker
+if [ "$#" -eq 0 ]; then
+    logger "Missing argument." "ERROR"
+    show_help
+    exit 1
+fi
+
+ONLY_ON_UPGRADE=1
+STACK_NAME=""
+
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -h|--help)
+            show_help
+            exit 0
+            ;;
+        -u|--only-on-upgrade)
+            ONLY_ON_UPGRADE=0
+            ;;
+        *)
+            if [ "$STACK_NAME" == "" ]; then
+                STACK_NAME="$1"
+            else
+                logger "Too many arguments." "ERROR"
+                show_help
+                exit 1
+            fi
+            ;;
+    esac
+    shift
+done
+
+if [ "$STACK_NAME" == "" ]; then
+    logger "Missing argument." "ERROR"
+    show_help
+    exit 1
+fi
 
 
 
@@ -123,6 +171,13 @@ function log_restarted_stack {
 # Init
 ################################################################################
 
+echo $SRC_DIR
+
+if [ ! -d "${SRC_DIR}" ]; then
+  logger "${SRC_DIR} does not exist." "ERROR"
+  exit 1
+fi
+
 cd "${SRC_DIR}"
 
 current_containers_count=$(docker compose ps -a --format '{{.ID}}' | wc -l)
@@ -160,6 +215,16 @@ check_space_left "${BKP_DIR}" $data_size
 # Main execution
 ################################################################################
 
+docker_img_nb_before_pull=$(docker images -a -q | wc -l)
+logger "Pull newer images if available upgrade..." "VERB"
+docker compose pull
+docker_img_nb_after_pull=$(docker images -a -q | wc -l)
+
+if [ $ONLY_ON_UPGRADE -eq 0 ] && [ $docker_img_nb_before_pull -eq $docker_img_nb_after_pull ]; then
+    logger "No upgrade available and --only-on-upgrade was passed." "INFO"
+    exit 0
+fi
+
 # Current Docker images backup.
 mkdir -p "${TMP_DIR}/${BKP_NAME}"
 for image_id in $(echo $current_images | jq -r '.[].ID');do
@@ -169,9 +234,6 @@ for image_id in $(echo $current_images | jq -r '.[].ID');do
     logger "Saving Docker image ${image_name} -> ${destination_tar} ..." "VERB"
     docker save $image_id > ${destination_tar}
 done
-
-logger "Pull newer images if available upgrade..." "VERB"
-docker compose pull
 
 start_time=$(date +%s)
 

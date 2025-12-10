@@ -9,7 +9,7 @@
 | check-mem-usage                  | Checks RAM and SWAP usage                           |                                   |
 | check-temperatures               | Checks CPU and disks temperatures                   |                                   |
 | create-data-integrity-report     | Hashes all files of a directory storing into a file | -d \<src dir\> -f \<report file\> |
-| docker-cold-bkp-upgrade          | Stops, backups, updates, restarts a Docker stack    | \<Docker stack name\>             |
+| docker-cold-bkp-upgrade          | Stops, backups, updates, restarts a Docker stack    | [-u] \<Docker stack name\>        |
 | logger_caller                    | Logger caller for python scripts                    |                                   |
 | logger                           | Common script for logging handling                  | \<name\> \<message\> \<loglevel\> |
 | mdadm-events                     | Executed on RAID events, for logging                | \<event\> \<array\> \<disk\>      |
@@ -41,6 +41,9 @@ Expected downtime in the real world:
 - For SMB, likely none, clients are not disconnected and can barely notice the update
 - For Jellyfin, 30s to 2min depending on data migration update when restarting the service
 - For Minecraft server, 30s to 2min depending on the map size
+
+Options:
+- -u | --only-on-upgrade ; Do not do anything if there is no upgrade available. Useful for stateless services (e.g. caddy, duckdns, samba)
 
 ```log
 root@salade:/opt/salad-server# ./scripts/docker-cold-bkp-upgrade.sh minecraft
