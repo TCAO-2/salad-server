@@ -22,7 +22,7 @@ trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${
 # Main
 ################################################################################
 
-DEVICES=$(smartctl --scan -j | jq -r .devices[].name)
+DEVICES=$(/sbin/smartctl --scan -j | jq -r .devices[].name)
 
 for device in $DEVICES; do
     /opt/salad-server/scripts/check-disk-health.sh $device || {

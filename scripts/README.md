@@ -154,10 +154,10 @@ flowchart LR
 30 03 * * * /usr/bin/unattended-upgrade
 
 # Disks SMART extended self-test - once a month 5:00 AM - expect 10h duration
-00 05 01 * * /usr/sbin/smartctl --test=long /dev/sda
-00 05 02 * * /usr/sbin/smartctl --test=long /dev/sdb
-00 05 03 * * /usr/sbin/smartctl --test=long /dev/sdc
-00 05 04 * * /usr/sbin/smartctl --test=long /dev/sdd
+00 05 01 * * /sbin/smartctl --test=long /dev/sda
+00 05 02 * * /sbin/smartctl --test=long /dev/sdb
+00 05 03 * * /sbin/smartctl --test=long /dev/sdc
+00 05 04 * * /sbin/smartctl --test=long /dev/sdd
 
 # Disks SMART health evaluation - once a month 5:00 AM
 00 05 10 * * /opt/salad-server/scripts/check-all-disk-health.sh
@@ -165,8 +165,8 @@ flowchart LR
 # Disks usage - everyday 4:30 AM
 30 04 * * * /opt/salad-server/scripts/check-disk-usage.sh
 
-# Memory usage - everyday 4:40 AM
-40 04 * * * /opt/salad-server/scripts/check-mem-usage.sh
+# Memory usage - Every hour
+01 * * * * /opt/salad-server/scripts/check-mem-usage.sh
 
 # Temperatures - Every hour
 02 * * * * /opt/salad-server/scripts/check-temperatures.sh

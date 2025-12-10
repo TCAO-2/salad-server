@@ -46,14 +46,19 @@ else
     logger "CPU temp ${cpu_temp}" "INFO"
 fi
 
+# Checks that we are using the root account.
+if ! [ "$(whoami)" == "root" ]; then
+    logger "Must be root for using smartctl." "ERROR"; exit 12
+fi
+
 # Disks temperatures.
-devices=$(smartctl --scan | grep -o "^[^ ]*")
+devices=$(/sbin/smartctl --scan | grep -o "^[^ ]*")
 for device in $devices; do
     if hdparm -C $device | grep standby &> /dev/null; then
         # Do not read the temp from a standby disk as it would wake it up.
         logger "Disk ${device} temp NaN (in standby)" "INFO"
     else
-        disk_temp=$(smartctl -aj ${device} | jq .temperature.current)
+        disk_temp=$(/sbin/smartctl -aj ${device} | jq .temperature.current)
         if [ $disk_temp -gt $DISK_THRESHOLD_ERROR ]; then
             logger "Disk ${device} temp ${disk_temp} > ${DISK_THRESHOLD_ERROR}" "ERROR"
         elif [ $disk_temp -gt $DISK_THRESHOLD_WARN ]; then

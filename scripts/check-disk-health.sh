@@ -198,14 +198,14 @@ if ! [ "$(whoami)" == "root" ]; then
 fi
 
 # Check that the disk exists.
-DEVICES=$(smartctl --scan -j | jq -r .devices[].name)
+DEVICES=$(/sbin/smartctl --scan -j | jq -r .devices[].name)
 if ! [[ ${DEVICES[@]} =~ $(realpath "${DEVICE}") ]]; then
     logger "${DEVICE} is missing or not a device" "ERROR"; exit 11
 fi
 
 # SMART overview.
 {
-    SMART_REPORT=$(smartctl -aj $DEVICE)
+    SMART_REPORT=$(/sbin/smartctl -aj $DEVICE)
     # Get the disk model name and S/N for physical identification.
     MODEL_NAME=$(echo $SMART_REPORT | jq -r .model_name)
     SERIAL_NUMBER=$(echo $SMART_REPORT | jq -r .serial_number)
