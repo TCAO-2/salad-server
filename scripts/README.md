@@ -157,17 +157,33 @@ flowchart LR
 # Host security updates and restart if needed - everyday 3:30 AM
 30 03 * * * /usr/bin/unattended-upgrade
 
-# Disks SMART extended self-test - once a month 5:00 AM - expect 10h duration
-00 05 01 * * /sbin/smartctl --test=long /dev/sda
-00 05 02 * * /sbin/smartctl --test=long /dev/sdb
-00 05 03 * * /sbin/smartctl --test=long /dev/sdc
-00 05 04 * * /sbin/smartctl --test=long /dev/sdd
+# We are grouping hard drive operations time window in order to minimize spin time.
+
+# Disks SMART extended self-test - once a month 4:00 AM - expect 10h duration
+00 04 01 * * /sbin/smartctl --test=long /dev/sda
+00 04 02 * * /sbin/smartctl --test=long /dev/sdb
+00 04 03 * * /sbin/smartctl --test=long /dev/sdc
+00 04 04 * * /sbin/smartctl --test=long /dev/sdd
 
 # Disks SMART health evaluation - once a month 5:00 AM
-00 05 10 * * /opt/salad-server/scripts/check-all-disk-health.sh
+30 04 10 * * /opt/salad-server/scripts/check-all-disk-health.sh
 
 # Disks usage - everyday 4:30 AM
-30 04 * * * /opt/salad-server/scripts/check-disk-usage.sh
+31 04 * * * /opt/salad-server/scripts/check-disk-usage.sh
+
+# Docker backups and upgrades - everyday morning
+32 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade duckdns
+34 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade caddy
+36 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade jellyfin
+38 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade samba
+40 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh minecraft
+
+# Backups rotate - everyday morning
+37 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh duckdns
+39 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh caddy
+41 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh jellyfin
+43 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh samba
+45 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh minecraft
 
 # Memory usage - Every hour
 01 * * * * /opt/salad-server/scripts/check-mem-usage.sh
