@@ -2,6 +2,7 @@
 
 | Script name                      | Comment                                             | Parameters                        |
 |----------------------------------|-----------------------------------------------------|-----------------------------------|
+| bkp-simple-rotate                | Keeps last 10 backups of a Docker service           | \<Docker stack name\>             |
 | check_data_integrity_from_report | Checks coherence from a pair of integrity reports   | \<src_report\> \<dst_report\>     |
 | check-all-disk-health            | Loops through all disks evaluating their healths    |                                   |
 | check-disk-health                | Reads SMART data of a disk to evaluate its health   | \<device path\>                   |

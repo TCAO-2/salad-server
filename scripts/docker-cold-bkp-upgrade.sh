@@ -180,8 +180,6 @@ function log_restarted_stack {
 # Init
 ################################################################################
 
-echo $SRC_DIR
-
 if [ ! -d "${SRC_DIR}" ]; then
   logger "${SRC_DIR} does not exist." "ERROR"
   exit 1
