@@ -15,4 +15,4 @@ else
     LEVEL="WARN"
 fi
 
-/opt/salad-server/scripts/logger.sh "mdadm" "${1} ${2} ${3}" $LEVEL
+/opt/salad-server/scripts/logger.sh "mdadm/${2}" "${1} ${2} ${3}" $LEVEL

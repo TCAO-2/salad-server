@@ -149,14 +149,14 @@ chmod o-x /opt /mnt
 # Configure the logger
 ################################################################################
 
-mkdir /var/log/salad
+mkdir /var/log/salad-server
 
 # logrotate configuration file.
-echo '/var/log/salad/*.log {
+echo '/var/log/salad-server/**/*.log {
     rotate 7
     daily
     notifempty
-}' > /etc/logrotate.d/salad
+}' > /etc/logrotate.d/salad-server
 
 
 

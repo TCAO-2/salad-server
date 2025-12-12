@@ -9,10 +9,12 @@
 # Stop the script on error.
 set -e
 
+LOGFILE_NAME="create-data-integrity-report"
+
 function logger {
     local message=$1
     local loglevel=$2
-    /opt/salad-server/scripts/logger.sh "create-data-integrity-report" "$message" "$loglevel" \
+    /opt/salad-server/scripts/logger.sh "$LOGFILE_NAME" "$message" "$loglevel" \
     || echo "[${loglevel}] ${message}"
 }
 

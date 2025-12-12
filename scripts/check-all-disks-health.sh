@@ -5,10 +5,12 @@
 # Stop the script on error.
 set -e
 
+LOGFILE_NAME="disk-health"
+
 function logger {
     local message=$1
     local loglevel=$2
-    /opt/salad-server/scripts/logger.sh "all-disk-health" "$message" "$loglevel" \
+    /opt/salad-server/scripts/logger.sh "$LOGFILE_NAME" "$message" "$loglevel" \
     || echo "[${loglevel}] ${message}"
 }
 

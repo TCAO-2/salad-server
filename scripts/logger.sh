@@ -39,7 +39,7 @@ if [[ -z "$LOG_LEVEL" ]]; then LOG_LEVEL="ERROR"; fi # Default loglevel if missi
 # Constants
 ################################################################################
 
-LOG_DIR="/var/log/salad"
+LOG_DIR="/var/log/salad-server"
 LOG_FILE="${LOG_DIR}/${LOG_NAME}.log"
 
 # Message colors.
@@ -101,7 +101,11 @@ function echo_file {
 # Main
 ################################################################################
 
-mkdir -p "${LOG_DIR}"
+# Extract the directory portion from LOG_NAME, as LOG_NAME can include directories.
+LOG_PATH=$(dirname "${LOG_FILE}")
+
+# Create the log directory if it doesn't exist.
+mkdir -p "${LOG_PATH}"
 timestamp=$(date "+%Y-%m-%d %H:%M:%S")
 
 # Console transport.

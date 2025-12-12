@@ -7,11 +7,20 @@
 # Stop the script on error.
 set -e
 
+STACK_NAME=""
+LOGFILE_NAME="docker-cold-bkp-upgrade"
+
 function logger {
     local message=$1
     local loglevel=$2
-    /opt/salad-server/scripts/logger.sh "docker-cold-bkp-upgrade" "$message" "$loglevel" \
-    || echo "[${loglevel}] ${message}"
+    local filename=$STACK_NAME
+    if [ -z "${filename}" ]; then
+        /opt/salad-server/scripts/logger.sh "$LOGFILE_NAME" "$message" "$loglevel" \
+        || echo "[${loglevel}] ${message}"
+    else
+        /opt/salad-server/scripts/logger.sh "${LOGFILE_NAME}/${filename}" "$message" "$loglevel" \
+        || echo "[${loglevel}] ${message}"
+    fi
 }
 
 trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
@@ -82,7 +91,7 @@ fi
 # Constants
 ################################################################################
 
-TIMESTAMP=$(date "+%Y-%m-%d-%H-%M-%S")
+TIMESTAMP=$(date "+%Y-%m-%d_%H-%M-%S")
 SRC_DIR="/opt/salad-server/docker/${STACK_NAME}"
 TMP_DIR="/tmp/salad-server"
 BKP_DIR="/mnt/data/salad-server/${STACK_NAME}"

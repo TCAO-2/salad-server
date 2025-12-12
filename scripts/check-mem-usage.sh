@@ -3,11 +3,19 @@
 # Stop the script on error.
 set -e
 
+LOGFILE_NAME="mem-usage"
+
 function logger {
     local message=$1
     local loglevel=$2
-    /opt/salad-server/scripts/logger.sh "mem-usage" "$message" "$loglevel" \
-    || echo "[${loglevel}] ${message}"
+    local filename=$3
+    if [ -z "${filename}" ]; then
+        /opt/salad-server/scripts/logger.sh "$LOGFILE_NAME" "$message" "$loglevel" \
+        || echo "[${loglevel}] ${message}"
+    else
+        /opt/salad-server/scripts/logger.sh "${LOGFILE_NAME}/${filename}" "$message" "$loglevel" \
+        || echo "[${loglevel}] ${message}"
+    fi
 }
 
 trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
@@ -36,10 +44,10 @@ free | grep -v "total" | while read line; do
     target=$(echo $line | grep -o "^[^:]*")
     usage=$(echo $line | awk '{printf "%.0f\n", ($3/$2)*100}')
     if [ $usage -gt $THRESHOLD_ERROR ]; then
-        logger "${target} usage ${usage}% over ${THRESHOLD_ERROR}%." "ERROR"
+        logger "${target} usage ${usage}% over ${THRESHOLD_ERROR}%." "ERROR" "$target"
     elif [ $usage -gt $THRESHOLD_WARN ]; then
-        logger "${target} usage ${usage}% over ${THRESHOLD_WARN}%." "WARN"
+        logger "${target} usage ${usage}% over ${THRESHOLD_WARN}%." "WARN" "$target"
     else
-        logger "${target} usage ${usage}%" "INFO"
+        logger "${target} usage ${usage}%" "INFO" "$target"
     fi
 done
