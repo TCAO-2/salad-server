@@ -168,6 +168,16 @@ function ata_check_attributes {
     fi
 }
 
+function ata_check_errors {
+    local smart_report=$1
+    local smart_errors_count=$(echo $smart_report | jq .ata_smart_error_log.summary.count)
+    if [[ $smart_errors_count -gt 0 ]]; then
+        logger "Disk ${DEVICE} SMART errors count: ${smart_errors_count}" "WARN"
+    else
+        logger "Disk ${DEVICE} SMART errors count: ${smart_errors_count}" "VERB"
+    fi
+}
+
 function nvme_check_attributes {
     local smart_report=$1
     local _healthy=true
@@ -212,9 +222,42 @@ if ! [[ ${DEVICES[@]} =~ $(realpath "${DEVICE}") ]]; then
     logger "Disk ${DEVICE} is missing or not a device" "ERROR"; exit 11
 fi
 
+
+
+healthy="true"
+
 # SMART overview.
 {
     SMART_REPORT=$(/sbin/smartctl -aj $DEVICE)
+    SMART_REPORT_RETURN_CODE=$?
+    logger "Disk ${DEVICE} SMART_REPORT_RETURN_CODE=${SMART_REPORT_RETURN_CODE}" "TRACE"
+    if [[ SMART_REPORT_RETURN_CODE -eq 0 ]]; then
+        logger "Disk ${DEVICE} smartctl ran without error" "VERB"
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 1 )); then
+        logger "Disk ${DEVICE} smartctl command line parse error" "ERROR"; exit 12
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 2 )); then
+        logger "Disk ${DEVICE} smartctl device open failed" "ERROR"; exit 12
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 4 )); then
+        logger "Disk ${DEVICE} smartctl SMART command faile" "ERROR"; exit 12
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 8 )); then
+        logger "Disk ${DEVICE} smartctl status check returned DISK FAILING" "ERROR"; healthy="false"
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 16 )); then
+        logger "Disk ${DEVICE} smartctl found prefail attributes <= threshold" "ERROR"; healthy="false"
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 32 )); then
+        logger "Disk ${DEVICE} smartctl found prefail attributes <= threshold in the past" "WARN"
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 64 )); then
+        logger "Disk ${DEVICE} smartctl found device errors in logs" "WARN"
+    fi
+    if (( SMART_REPORT_RETURN_CODE & 128 )); then
+        logger "Disk ${DEVICE} smartctl found selftest errors" "ERROR"; healthy="false"
+    fi
     # Get the disk model name and S/N for physical identification.
     MODEL_NAME=$(echo $SMART_REPORT | jq -r .model_name)
     SERIAL_NUMBER=$(echo $SMART_REPORT | jq -r .serial_number)
@@ -232,12 +275,11 @@ logger "Disk ${DEVICE} detected as ${DEVICE_NAME}" "VERB"
 
 
 # SMART checks.
-healthy="true"
-
 if [ $DISK_PROTOCOL == "ATA" ]; then
     check_status            "$SMART_REPORT" || healthy="false"
     ata_check_selftests     "$SMART_REPORT" || healthy="false"
     ata_check_attributes    "$SMART_REPORT" || healthy="false"
+    ata_check_errors        "$SMART_REPORT"
 elif [ $DISK_PROTOCOL == "NVMe" ]; then
     check_status            "$SMART_REPORT" || healthy="false"
     # There are no selftest for NVMe devices, everything is managed by the controller.
