@@ -104,7 +104,7 @@ function ata_check_selftests {
     logger "Disk ${DEVICE} lifetime_hours: ${lifetime_hours}" "TRACE"
     if echo "$smart_report" | jq .ata_smart_self_test_log.standard.table[] &> /dev/null; then
         local most_recent_extended_test=$(echo "$smart_report" \
-        | jq '.ata_smart_self_test_log.standard.table[] | select(.type.string == "Extended offline") | .lifetime_hours' \
+        | jq '.ata_smart_self_test_log.standard.table[] | select((.type.string == "Extended offline") and (.status.string | startswith("Completed"))) | .lifetime_hours' \
         | head -n 1)
     else
         # No selftest have already been run.
