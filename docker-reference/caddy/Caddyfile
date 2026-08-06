@@ -24,3 +24,27 @@ Disallow: /"
 	}
 	reverse_proxy jellyfin:8096
 }
+
+
+
+
+
+####################################################################################################
+# Nextcloud
+####################################################################################################
+
+nextcloud.example.duckdns.org {
+        respond /robots.txt 200 {
+body "User-agent: *
+Disallow: /"
+        }
+	reverse_proxy nextcloud:80
+}
+
+collabora.example.duckdns.org {
+        respond /robots.txt 200 {
+body "User-agent: *
+Disallow: /"
+        }
+	reverse_proxy nextcloud_collabora:9980 
+}

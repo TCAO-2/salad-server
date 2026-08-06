@@ -1,0 +1,50 @@
+services:
+  nextcloud_mariadb:
+    image: mariadb:lts
+    container_name: nextcloud_mariadb
+    command: --transaction-isolation=READ-COMMITTED
+    volumes:
+      - ./mariadb:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=supersecret
+      - MYSQL_PASSWORD=supersecret
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+    restart: always
+
+  nextcloud_redis:
+    image: redis:alpine
+    container_name: nextcloud_redis
+    restart: always
+
+  nextcloud:
+    image: nextcloud
+    container_name: nextcloud
+    depends_on:
+      - nextcloud_redis
+      - nextcloud_mariadb
+    volumes:
+      - /data:/data # To be included as "external storage" in nextcloud configuration.
+      - ./nextcloud:/var/www/html
+    environment:
+      - MYSQL_PASSWORD=supersecret
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_HOST=nextcloud_mariadb
+      - APACHE_DISABLE_REWRITE_IP=1
+      - TRUSTED_PROXIES=caddy
+      - OVERWRITEPROTOCOL=https
+      - REDIS_HOST=nextcloud_redis
+    restart: always
+
+  nextcloud_collabora:
+    image: collabora/code:latest
+    container_name: nextcloud_collabora
+    environment:
+      - server_name=collabora.example.duckdns.org
+      - username=admin
+      - password=supersecret
+      - dictionaries=en_GB en_US fr_FR
+      - extra_params="--o:ssl.enable=false --o:ssl.termination=true --o:logging.level=warning --o:user_interface.mode=compact"
+    restart: always
+
