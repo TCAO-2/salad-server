@@ -177,6 +177,7 @@ flowchart LR
 36 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade jellyfin
 38 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade samba
 40 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh minecraft
+44 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh nextcloud
 
 # Backups rotate - everyday morning
 37 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh duckdns

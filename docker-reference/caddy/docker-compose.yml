@@ -15,9 +15,13 @@ services:
       - 443:443/udp
     networks:
       - jellyfin_bridge       # Comment if you dont use jellyfin.
+      - nextcloud_bridge      # Comment if you dont use nextcloud.
     restart: unless-stopped
 
 networks:
   jellyfin_bridge:            # Comment if you dont use jellyfin.
     name: jellyfin_bridge     # Comment if you dont use jellyfin.
     external: true            # Comment if you dont use jellyfin.
+  nextcloud_bridge:           # Comment if you dont use nextcloud.
+    name: nextcloud_bridge    # Comment if you dont use nextcloud.
+    external: true            # Comment if you dont use nextcloud.

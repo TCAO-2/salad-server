@@ -10,6 +10,7 @@ Each independent service is managed by a docker stack, making it easier to manag
 | reverse proxy | caddy      | HTTPS redirects traffic to HTTP services using subdomains      |
 | game server   | minecraft  | Minecraft Server                                               |
 | file share    | samba      | Windows share for your local network                           |
+| cloud         | nextcloud  | Provides web interface including drive, office, calendar       |
 
 # Common guideline
 

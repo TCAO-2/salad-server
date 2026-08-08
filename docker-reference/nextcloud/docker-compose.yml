@@ -10,21 +10,25 @@ services:
       - MYSQL_PASSWORD=supersecret
       - MYSQL_DATABASE=nextcloud
       - MYSQL_USER=nextcloud
+    networks:
+      - nextcloud_backend
     restart: always
 
   nextcloud_redis:
     image: redis:alpine
     container_name: nextcloud_redis
+    networks:
+      - nextcloud_backend
     restart: always
 
   nextcloud:
-    image: nextcloud
+    image: nextcloud:latest
     container_name: nextcloud
     depends_on:
       - nextcloud_redis
       - nextcloud_mariadb
     volumes:
-      - /data:/data # To be included as "external storage" in nextcloud configuration.
+      - /mnt/data:/storage # "/storage" to be included as "external storage" in nextcloud configuration.
       - ./nextcloud:/var/www/html
     environment:
       - MYSQL_PASSWORD=supersecret
@@ -35,6 +39,9 @@ services:
       - TRUSTED_PROXIES=caddy
       - OVERWRITEPROTOCOL=https
       - REDIS_HOST=nextcloud_redis
+    networks:
+      - nextcloud_backend
+      - bridge
     restart: always
 
   nextcloud_collabora:
@@ -46,5 +53,14 @@ services:
       - password=supersecret
       - dictionaries=en_GB en_US fr_FR
       - extra_params="--o:ssl.enable=false --o:ssl.termination=true --o:logging.level=warning --o:user_interface.mode=compact"
+    networks:
+      - bridge
     restart: always
 
+networks:
+  nextcloud_backend:
+    # Backend network without WAN access.
+    driver: bridge
+    internal: true
+  bridge:
+    driver: bridge
