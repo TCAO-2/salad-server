@@ -1,0 +1,864 @@
+zabbix_export:
+  version: '8.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: f2f4af0b06054c9390842d489e5d4284
+      template: salad-server
+      name: salad-server
+      templates:
+        - name: 'Docker by Zabbix agent 2'
+        - name: 'Linux by Zabbix agent'
+      groups:
+        - name: Templates
+      items:
+        - uuid: d8d06344dc4f48c9bf3d3f3b7ec056f1
+          name: 'Host only CPU usage'
+          type: CALCULATED
+          key: cpu.host.usage
+          units: '%'
+          params: 'last(//system.cpu.num)*last(//system.cpu.util)-sum(last_foreach(//docker.container_stats.cpu_pct_usage[*]))'
+          tags:
+            - tag: component
+              value: cpu
+        - uuid: 13d91be1252b464e94efb9c3097115b3
+          name: 'Host only CPU core usage'
+          type: CALCULATED
+          key: cpu.host.usage.core
+          value_type: FLOAT
+          units: core
+          params: last(//cpu.host.usage)/100
+          tags:
+            - tag: component
+              value: cpu
+        - uuid: 2d78212497bf41aeb83ea8c09d69419f
+          name: 'Disks raw'
+          key: disks.raw
+          delay: 15m
+          value_type: TEXT
+          timeout: 30s
+          tags:
+            - tag: component
+              value: disk
+        - uuid: e1976492ea5f467885887cd9afe83de4
+          name: 'Disks on standby'
+          type: CALCULATED
+          key: disks.standby.count
+          params: 'sum(last_foreach(//disks.value[*,standby]))'
+          tags:
+            - tag: component
+              value: disk
+        - uuid: e2ecf25e45cc415b8c32d061b120f94e
+          name: 'Docker containers raw'
+          key: docker.containers.raw
+          value_type: TEXT
+        - uuid: 75e8ff45e553476c833f367b841d80eb
+          name: 'Filesystems raw'
+          key: filesystems.raw
+          delay: 5m
+          value_type: TEXT
+          tags:
+            - tag: component
+              value: filesystem
+        - uuid: 9aa8f9839bf14e28b73f81138f3f78a6
+          name: 'Host only memory usage'
+          type: CALCULATED
+          key: host.memory.usage
+          units: B
+          params: 'last(//vm.memory.size[total])-last(//vm.memory.size[available])-sum(last_foreach(//docker.container_stats.memory.usage_total[*]))'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: f6358a335bbc457c9b981116b50f4079
+          name: 'Host network out'
+          type: CALCULATED
+          key: host.network.out
+          units: B
+          params: 'last(//net.if.out["enp4s0"])'
+        - uuid: ac65c7b725844d189a799315e20bd679
+          name: 'Swap usage'
+          type: CALCULATED
+          key: host.swap.usage
+          units: B
+          params: 'last(//system.swap.size[,total])-last(//system.swap.size[,free])'
+          tags:
+            - tag: component
+              value: memory
+        - uuid: 920249df16f841e39802c3c18356c37d
+          name: 'Host network in'
+          type: CALCULATED
+          key: host.wan.in
+          units: B
+          params: 'last(//net.if.in["enp4s0"])'
+        - uuid: cb17532d4ccc446695e560bff9fcb3de
+          name: 'mdadm raw'
+          key: mdadm.raw
+          value_type: JSON
+          tags:
+            - tag: component
+              value: mdadm
+        - uuid: cd10770936574e2b9f9396938a4a05e2
+          name: 'Temperatures raw'
+          key: temperatures.raw
+          value_type: JSON
+          tags:
+            - tag: component
+              value: temperature
+      discovery_rules:
+        - uuid: 22247f8be59e4185ba88d34ed3932709
+          name: 'Disks discovery'
+          type: DEPENDENT
+          key: disks.discovery
+          item_prototypes:
+            - uuid: 5751265e450f49a792b964b921b6b4d8
+              name: 'Disk {#NAME}: Standby % 30d'
+              type: CALCULATED
+              key: 'disks.standby.pct["{#NAME}"]'
+              units: '%'
+              params: '100*avg(//disks.value["{#NAME}",standby],30d)'
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: b629c90200ff4f7ba742eb4248c5822e
+              name: 'Disk {#NAME}: Device'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",device]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].device'
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: 69ac648b052e4b6abd7fea4fcec80f24
+              name: 'Disk {#NAME}: Healthy'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",healthy]'
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].healthy'
+                  error_handler: DISCARD_VALUE
+                - type: STR_REPLACE
+                  parameters:
+                    - 'true'
+                    - '1'
+                - type: STR_REPLACE
+                  parameters:
+                    - 'false'
+                    - '0'
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: 3b10b248a493417ab2e62bd9b387ce51
+              name: 'Disk {#NAME}: Model'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",model]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].model_name'
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: e96113698bf14b84a994b82a32d5e3ac
+              name: 'Disk {#NAME}: Power on hours'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",power_on_hours]'
+              units: '!h'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].power_on_hours'
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: 8aabb5c492254bb99c074bc778ee9223
+              name: 'Disk {#NAME}: Protocol'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",protocol]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].protocol'
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: e2e1b62b892d4053b7428ae20cac25e1
+              name: 'Disk {#NAME}: Serial number'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",sn]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].serial_number'
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: 08664617f0ca40c588d102de0d73b32e
+              name: 'Disk {#NAME}: Standby'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",standby]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].standby'
+                - type: STR_REPLACE
+                  parameters:
+                    - 'true'
+                    - '1'
+                - type: STR_REPLACE
+                  parameters:
+                    - 'false'
+                    - '0'
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: 3e7ec25bef6049f4b663e51f3d329024
+              name: 'Disk {#NAME}: Status'
+              type: CALCULATED
+              key: 'disks.value["{#NAME}",status]'
+              params: '2*(1-last(//disks.value["{#NAME}",healthy])) + last(//disks.value["{#NAME}",healthy])*last(//disks.value["{#NAME}",warn])'
+              description: |
+                0 -> healthy
+                1 -> warning
+                2 -> unhealthy
+              valuemap:
+                name: 'Disk status'
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: b0ed9de7200f4f8baf3cb886d4f59215
+              name: 'Disk {#NAME}: Temperature'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",temp]'
+              units: °C
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].temperature'
+                  error_handler: DISCARD_VALUE
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+            - uuid: 1f5af5513c7e4e608799e8d3a7b8d146
+              name: 'Disk {#NAME}: Warning'
+              type: DEPENDENT
+              key: 'disks.value["{#NAME}",warn]'
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].warning'
+                  error_handler: DISCARD_VALUE
+                - type: STR_REPLACE
+                  parameters:
+                    - 'true'
+                    - '1'
+                - type: STR_REPLACE
+                  parameters:
+                    - 'false'
+                    - '0'
+              master_item:
+                key: disks.raw
+              tags:
+                - tag: component
+                  value: disk
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: disk
+                  value: '{#NAME}'
+          master_item:
+            key: disks.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var output = { "data": [] };
+                  const parsedValue = JSON.parse(value);
+                  const targets = Object.keys(parsedValue);
+                  for (var i=0; i < targets.length; i++) {
+                  	const target = targets[i];
+                  	const entry = parsedValue[target];
+                  	output.data.push({
+                  		"{#NAME}": target,
+                  		"{#DEVICE}": entry.device
+                  	});
+                  }
+                  return JSON.stringify(output);
+        - uuid: 5cb3ed42268b4609a0921c25af24f542
+          name: 'Docker containers discovery'
+          type: DEPENDENT
+          key: docker.containers.discovery
+          item_prototypes:
+            - uuid: a44a855fb5fd4d2ca9e00b297efd9e73
+              name: 'Container {#NAME}: Backup age'
+              type: CALCULATED
+              key: 'containers.backup["{#NAME}",age]'
+              value_type: FLOAT
+              units: d
+              params: '(now()-last(//containers.backup["{#NAME}",date]))/86400'
+              tags:
+                - tag: component
+                  value: backup
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: 5e75fbbca80d44499802d2dd25bc8140
+              name: 'Container {#NAME}: Backup date'
+              type: DEPENDENT
+              key: 'containers.backup["{#NAME}",date]'
+              trends: '0'
+              units: unixtime
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#ID}''].last_backup'
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var iso = value.trim().replace(" ", "T") + "Z";
+                      var ms = Date.parse(iso);
+                      if (isNaN(ms)) {
+                          return 0; // Will be reported as "never".
+                      }
+                      return Math.floor(ms / 1000);
+              master_item:
+                key: docker.containers.raw
+              tags:
+                - tag: component
+                  value: backup
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: 89583ae9f70e42bcad5db6a25a5d2356
+              name: 'Container {#NAME}: Image age'
+              type: CALCULATED
+              key: 'containers.image["{#NAME}",age]'
+              value_type: FLOAT
+              units: d
+              params: '(now()-last(//containers.image["{#NAME}",creation]))/86400'
+              tags:
+                - tag: component
+                  value: images
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: 1ead0c322f4e43dca7d411c84dec5160
+              name: 'Container {#NAME}: Image creation date'
+              type: DEPENDENT
+              key: 'containers.image["{#NAME}",creation]'
+              trends: '0'
+              units: unixtime
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#ID}''].image.creation_date'
+                - type: JAVASCRIPT
+                  parameters:
+                    - |
+                      var iso = value.trim().replace(" ", "T") + "Z";
+                      var ms = Date.parse(iso);
+                      if (isNaN(ms)) {
+                          throw "Cannot parse image creation date: " + value;
+                      }
+                      return Math.floor(ms / 1000);
+              master_item:
+                key: docker.containers.raw
+              tags:
+                - tag: component
+                  value: images
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: d7a963d61b3140749ce196d6e759b503
+              name: 'Container {#NAME}: Disk usage'
+              type: DEPENDENT
+              key: 'containers["{#NAME}",disk]'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#ID}''].disk_usage'
+              master_item:
+                key: docker.containers.raw
+              tags:
+                - tag: component
+                  value: images
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: 464265a10002457e83904ec49ee9e577
+              name: 'Container {#NAME}: Stack name'
+              type: DEPENDENT
+              key: 'containers["{#NAME}",stack]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#ID}''].stack_name'
+              master_item:
+                key: docker.containers.raw
+              tags:
+                - tag: component
+                  value: container
+                - tag: container
+                  value: '{#NAME}'
+          master_item:
+            key: docker.containers.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var output = { "data": [] };
+                  const parsedValue = JSON.parse(value);
+                  const targets = Object.keys(parsedValue);
+                  for (var i=0; i < targets.length; i++) {
+                  	const target = targets[i];
+                  	const entry = parsedValue[target];
+                  	output.data.push({
+                  		"{#ID}": target,
+                          "{#NAME}": "/" + entry.name,
+                  		"{#IMAGE_ID}": entry.image.id,
+                  		"{#IMAGE_NAME}": entry.image.name,
+                  		"{#IMAGE_CREATION_DATE}": entry.image.creation_date
+                  	});
+                  }
+                  return JSON.stringify(output);
+        - uuid: ecd2d5ec96e7469cb36788225028cfa2
+          name: 'Filesystems discovery'
+          type: DEPENDENT
+          key: filesystems.discovery
+          description: 'Check filesystems usage with /opt/salad-server/scripts/check-disk-usage.sh'
+          item_prototypes:
+            - uuid: daefe4f4346143f4a17b2490e4495582
+              name: 'Filesystem {#NAME}: Available'
+              type: DEPENDENT
+              key: 'filesystems.value["{#NAME}",avail]'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].avail'
+              master_item:
+                key: filesystems.raw
+              tags:
+                - tag: component
+                  value: filesystem
+                - tag: filesystem
+                  value: '{#NAME}'
+            - uuid: 2ad3b6c40f5d4201a7ccc48495597773
+              name: 'Filesystem {#NAME}: Percent used'
+              type: DEPENDENT
+              key: 'filesystems.value["{#NAME}",pcent]'
+              units: '%'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].pcent'
+              master_item:
+                key: filesystems.raw
+              tags:
+                - tag: component
+                  value: filesystem
+                - tag: filesystem
+                  value: '{#NAME}'
+            - uuid: 5b41ae7e262c427e9c270e7be546d97c
+              name: 'Filesystem {#NAME}: Size'
+              type: DEPENDENT
+              key: 'filesystems.value["{#NAME}",size]'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].size'
+              master_item:
+                key: filesystems.raw
+              tags:
+                - tag: component
+                  value: filesystem
+                - tag: filesystem
+                  value: '{#NAME}'
+            - uuid: c92a64e2188e4b66917725de0c8d3c39
+              name: 'Filesystem {#NAME}: Source'
+              type: DEPENDENT
+              key: 'filesystems.value["{#NAME}",source]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].source'
+              master_item:
+                key: filesystems.raw
+              tags:
+                - tag: component
+                  value: filesystem
+                - tag: filesystem
+                  value: '{#NAME}'
+            - uuid: f10aa0ad3ce243fcaba8847acb1616a9
+              name: 'Filesystem {#NAME}: Used'
+              type: DEPENDENT
+              key: 'filesystems.value["{#NAME}",used]'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].used'
+              master_item:
+                key: filesystems.raw
+              tags:
+                - tag: component
+                  value: filesystem
+                - tag: filesystem
+                  value: '{#NAME}'
+          master_item:
+            key: filesystems.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var output = { "data": [] };
+                  const parsedValue = JSON.parse(value);
+                  const targets = Object.keys(parsedValue);
+                  for (var i=0; i < targets.length; i++) {
+                  	const target = targets[i];
+                  	const entry = parsedValue[target];
+                  	output.data.push({
+                  		"{#NAME}": target
+                  	});
+                  }
+                  return JSON.stringify(output);
+        - uuid: 372fed90a1bf436789d20caec479f06f
+          name: 'mdadm discovery'
+          type: DEPENDENT
+          key: mdadm.discovery
+          item_prototypes:
+            - uuid: d6d02b79f2b448c9b5ba9bc512646428
+              name: 'mdadm {#NAME}: Array events'
+              type: DEPENDENT
+              key: 'mdadm.array["{#NAME}",events]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].events'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: ab26e89423de4204ae62c5b23c341fbc
+              name: 'mdadm {#NAME}: Array name'
+              type: DEPENDENT
+              key: 'mdadm.array["{#NAME}",name]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].name'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: d39a8979aad44911a43c0d5331ef1211
+              name: 'mdadm {#NAME}: RAID level'
+              type: DEPENDENT
+              key: 'mdadm.array["{#NAME}",raidlevel]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].raid_level'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: d47c5e2944f240049cd8f2fcc85c1107
+              name: 'mdadm {#NAME}: Return code'
+              type: DEPENDENT
+              key: 'mdadm.array["{#NAME}",returncode]'
+              description: |
+                0 -> The array is functioning normally.
+                1 -> The array has at least one failed device.
+                2 -> The array has multiple failed devices such that it is unusable.
+                4 -> There was an error while trying to get information about the device.
+              valuemap:
+                name: 'mdadm return code'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].mdadm_return_code'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: 20212ba4a2cc4ccb8a120af599ee79e0
+              name: 'mdadm {#NAME}: Array size'
+              type: DEPENDENT
+              key: 'mdadm.array["{#NAME}",size]'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].array_size'
+                - type: MULTIPLIER
+                  parameters:
+                    - '1024'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: 2f2c298b0bc8450494bc66e01a8ea9b9
+              name: 'mdadm {#NAME}: Array state'
+              type: DEPENDENT
+              key: 'mdadm.array["{#NAME}",state]'
+              value_type: TEXT
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].state'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: 35d591680d7e4906b0f8991d019ff223
+              name: 'mdadm {#NAME}: Active devices'
+              type: DEPENDENT
+              key: 'mdadm.devices["{#NAME}",active]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].active_devices'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: dbad1430983b4e8dbf1d5fe7c298bbe4
+              name: 'mdadm {#NAME}: Failed devices'
+              type: DEPENDENT
+              key: 'mdadm.devices["{#NAME}",failed]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].working_devices'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: 5c50faf7fbbc44df91c66c1fd2550fac
+              name: 'mdadm {#NAME}: RAID devices'
+              type: DEPENDENT
+              key: 'mdadm.devices["{#NAME}",raid]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].raid_devices'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: 8a0a5009edbe44a29cdca1475e1133c3
+              name: 'mdadm {#NAME}: Spare devices'
+              type: DEPENDENT
+              key: 'mdadm.devices["{#NAME}",spare]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].failed_devices'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: 94b4809341464fd5b5ef92560ed67dc7
+              name: 'mdadm {#NAME}: Total devices'
+              type: DEPENDENT
+              key: 'mdadm.devices["{#NAME}",total]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].total_devices'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+            - uuid: c7c28b27282f4522809a9e2230808728
+              name: 'mdadm {#NAME}: Working devices'
+              type: DEPENDENT
+              key: 'mdadm.devices["{#NAME}",working]'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}''].working_devices'
+              master_item:
+                key: mdadm.raw
+              tags:
+                - tag: array
+                  value: '{#NAME}'
+                - tag: component
+                  value: mdadm
+          master_item:
+            key: mdadm.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var output = { "data": [] };
+                  const parsedValue = JSON.parse(value);
+                  const targets = Object.keys(parsedValue);
+                  for (var i=0; i < targets.length; i++) {
+                  	const target = targets[i];
+                  	const entry = parsedValue[target];
+                  	output.data.push({
+                  		"{#NAME}": target
+                  	});
+                  }
+                  return JSON.stringify(output);
+        - uuid: 824863e8086644f99a0eaede4195de19
+          name: 'Temperature discovery'
+          type: DEPENDENT
+          key: temperatures.discovery
+          item_prototypes:
+            - uuid: e91eb6b7cb914ef7beb0f53787c7aa2b
+              name: 'Temperature {#NAME}: Value'
+              type: DEPENDENT
+              key: 'temperatures["{#NAME}",value]'
+              units: °C
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#NAME}'']'
+              master_item:
+                key: temperatures.raw
+              tags:
+                - tag: component
+                  value: temperature
+          master_item:
+            key: temperatures.raw
+          preprocessing:
+            - type: JAVASCRIPT
+              parameters:
+                - |
+                  var output = { "data": [] };
+                  const parsedValue = JSON.parse(value);
+                  const targets = Object.keys(parsedValue);
+                  for (var i=0; i < targets.length; i++) {
+                  	const target = targets[i];
+                  	const entry = parsedValue[target];
+                  	output.data.push({
+                  		"{#NAME}": target
+                  	});
+                  }
+                  return JSON.stringify(output);
+      valuemaps:
+        - uuid: f707daf1cd4c47288632a983a26129f6
+          name: 'Disk status'
+          mappings:
+            - value: '0'
+              newvalue: healthy
+            - value: '1'
+              newvalue: warning
+            - value: '2'
+              newvalue: unhealthy
+        - uuid: 035c218c0f2645e9b2cb3f5a7f91e1c2
+          name: 'mdadm return code'
+          mappings:
+            - value: '0'
+              newvalue: healthy
+            - value: '1'
+              newvalue: degraded
+            - value: '2'
+              newvalue: unusable
+            - value: '4'
+              newvalue: unknown
