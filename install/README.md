@@ -96,7 +96,7 @@ hdparm --yes-i-know-what-i-am-doing -s 1 /dev/sdX
 # Here 120 corresponds to 10 minutes.
 hdparm -S 120 /dev/sdX
 # Add the standby in /etc/hdparm.conf file to make it persistent.
-/dev/sdX {
+/dev/disk/by-id/nameX {
     spindown_time = 120
 }
 ```

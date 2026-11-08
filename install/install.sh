@@ -26,7 +26,7 @@ SSHD_PORT=22
 ################################################################################
 
 packages=(
-  "mlocate htop jq"         # Common tools.
+  "plocate htop jq"         # Common tools.
   mdadm                     # Software RAID.
   hdparm                    # HDD sleep.
   unattended-upgrades       # Host auto upgrades.
@@ -156,6 +156,7 @@ echo '/var/log/salad-server/**/*.log {
     rotate 7
     daily
     notifempty
+    minsize 10M
 }' > /etc/logrotate.d/salad-server
 
 

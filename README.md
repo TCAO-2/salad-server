@@ -9,7 +9,7 @@ easy to maintain, to update, to rollback and security oriented.
 
 ## Features
 
-- Software RAID for data (mdadm)
+- Software RAID for data (mdadm or ZFS)
 - Automatic updates of the host (unattended-upgrades)
 - Multi transport centralized logging (console and files)
 - Simply start, stop, update, rollback any guest service on demand with Docker
@@ -20,11 +20,13 @@ easy to maintain, to update, to rollback and security oriented.
   - Caddy (HTTPS reverse proxy)
   - Jellyfin (Private streaming web service)
   - Minecraft server
+- Automatic updates and backup of the guests Docker stacks
+- Hardware and sofware monitoring
 
 ## To do
 
-- Automatic updates and backup of the guests Docker stacks
-- Hardware and software monitoring with e-mail alerts
+- Alerts
+- IPv4/IPv6 dual-stack with complex firewalling
 
 # Directory structure
 
@@ -53,3 +55,21 @@ simply as removing a folder
 - Every Docker stack is described in a compose file, use __docker compose up__ or __docker compose down__ commands to run or stop a stack
 - Every host routine is triggered by CRON
 - RAID events are triggering __scripts/raid-event.sh__
+
+# ZFS cheat sheet
+
+```bash
+# Create a pool.
+zpool create <pool_name> raidz1 <devices>
+
+# Check pool and snapshots status.
+zpool status [-v]
+zpool list
+zpool scrub <pool_name>
+zfs snapshot <pool_name>@<snapshot_name>
+zfs list -t snapshot
+
+# Use a snapshot.
+zfs rollback <dataset>@<snapshot_name>
+ls /<dataset>/.zfs/snapshot/<snapshot_name>
+```

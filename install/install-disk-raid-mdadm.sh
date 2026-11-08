@@ -12,10 +12,10 @@ set -e
 ################################################################################
 
 # Name of the logical volume to create. The partition will be suffixed by "p1".
-RAID_NAME="md0"
+ARRAY_NAME="md0"
 
 # Name of the physical volumes to use.
-RAID_DEVICES="/dev/vdb /dev/vdc /dev/vdd /dev/vde"
+ARRAY_DEVICES="/dev/vdb /dev/vdc /dev/vdd /dev/vde"
 
 # RAID events will be reported using this script.
 ALERT_SCRIPT="/opt/salad-server/scripts/mdadm-event.sh"
@@ -29,12 +29,12 @@ ALERT_SCRIPT="/opt/salad-server/scripts/mdadm-event.sh"
 ################################################################################
 
 # Create the RAID5 array.
-raid_dev_nb=$(echo $RAID_DEVICES | wc -w)
-mdadm --create --verbose /dev/${RAID_NAME} --level=5 --raid-devices=$raid_dev_nb $RAID_DEVICES
+raid_dev_nb=$(echo $ARRAY_DEVICES | wc -w)
+mdadm --create --verbose /dev/${ARRAY_NAME} --level=5 --raid-devices=$raid_dev_nb $ARRAY_DEVICES
 
 # Create a Linux filesystem partition.
-echo "type=83" | sfdisk /dev/${RAID_NAME}
-partition=${RAID_NAME}p1
+echo "type=83" | sfdisk /dev/${ARRAY_NAME}
+partition=${ARRAY_NAME}p1
 
 # Format the partition in ext4.
 mkfs.ext4 /dev/${partition}
