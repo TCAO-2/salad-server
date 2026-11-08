@@ -4,11 +4,11 @@
 |----------------------------------|-----------------------------------------------------|-----------------------------------|
 | bkp-simple-rotate                | Keeps last 10 backups of a Docker service           | \<Docker stack name\>             |
 | check_data_integrity_from_report | Checks coherence from a pair of integrity reports   | \<src_report\> \<dst_report\>     |
-| check-all-disk-health            | Loops through all disks evaluating their healths    |                                   |
-| check-disk-health                | Reads SMART data of a disk to evaluate its health   | \<device path\>                   |
-| check-disk-usage                 | Checks usage of every partitions                    |                                   |
+| check-all-disk-health            | Loops through all disks evaluating their healths    | [-j] [-a] [-s]                    |
+| check-disk-health                | Reads SMART data of a disk to evaluate its health   | -d \<device path\> [-j] [-a]      |
+| check-disk-usage                 | Checks usage of every partitions                    | [-j] [-p] \<device_path\> [-a]    |
 | check-mem-usage                  | Checks RAM and SWAP usage                           |                                   |
-| check-temperatures               | Checks CPU and disks temperatures                   |                                   |
+| check-temperatures               | Checks CPU and disks temperatures                   | [-j] [-s]                         |
 | create-data-integrity-report     | Hashes all files of a directory storing into a file | -d \<src dir\> -f \<report file\> |
 | docker-cold-bkp-upgrade          | Stops, backups, updates, restarts a Docker stack    | [-u] \<Docker stack name\>        |
 | logger_caller                    | Logger caller for python scripts                    |                                   |
@@ -148,7 +148,7 @@ flowchart LR
     cron -- daily --> check-disk-usage --> logger
     cron -- hourly --> check-mem-usage --> logger
     cron -- hourly --> check-temperatures --> logger
-    cron --daily --> unattended-upgrade --> unattended-upgrade-log
+    cron -- daily --> unattended-upgrade --> unattended-upgrade-log
 ```
 
 ## Sample crontab

@@ -91,7 +91,8 @@ fi
 # Constants
 ################################################################################
 
-TIMESTAMP=$(date "+%Y-%m-%d_%H-%M-%S")
+# In UTC, for consistency as this date is used by other programs.
+TIMESTAMP=$(date -u "+%Y-%m-%d_%H-%M-%S")
 SRC_DIR="/opt/salad-server/docker/${STACK_NAME}"
 TMP_DIR="/tmp/salad-server"
 BKP_DIR="/mnt/data/salad-server/${STACK_NAME}"

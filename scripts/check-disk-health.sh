@@ -17,31 +17,32 @@ set -e
 
 DEVICE_NAME=""
 LOGFILE_NAME="disk-health"
+JSON_OUTPUT=1
+ATTRIBUTES=1
 
 function logger {
-    local message=$1
-    local loglevel=$2
-    local filename=$DEVICE_NAME
-    if [ -z "${filename}" ]; then
-        /opt/salad-server/scripts/logger.sh "$LOGFILE_NAME" "$message" "$loglevel" \
-        || echo "[${loglevel}] ${message}"
-    else
-        /opt/salad-server/scripts/logger.sh "${LOGFILE_NAME}/${filename}" "$message" "$loglevel" \
-        || echo "[${loglevel}] ${message}"
+    if [ $JSON_OUTPUT -eq 1 ]; then
+        local message=$1
+        local loglevel=$2
+        local filename=$3
+        if [ -z "${filename}" ]; then
+            /opt/salad-server/scripts/logger.sh "$LOGFILE_NAME" "$message" "$loglevel" 2>/dev/null \
+            || echo "[${loglevel}] ${message}"
+        else
+            /opt/salad-server/scripts/logger.sh "${LOGFILE_NAME}/${filename}" "$message" "$loglevel" 2>/dev/null \
+            || echo "[${loglevel}] ${message}"
+        fi
+    fi
+}
+
+function json_output {
+    if [ $JSON_OUTPUT -eq 0 ]; then
+        echo $json
     fi
 }
 
 trap 'logger "Unexpected error at line ${LINENO}: \"${BASH_COMMAND}\" returns ${?}." "ERROR"' ERR
-
-
-
-
-
-################################################################################
-# Parameters
-################################################################################
-
-DEVICE=$1 # Disk device e.g. /dev/sda or /dev/disk/by-id/nvme-WD_Blue_x .
+trap json_output EXIT
 
 
 
@@ -82,6 +83,40 @@ declare -A NVME_CRITICALS=(
 
 
 ################################################################################
+# Arguments
+################################################################################
+
+function usage {
+    echo "Usage: check-disk-health.sh -d <str> [-j] [-a] [-h]"
+    echo "-d device e.g. /dev/sda or /dev/disk/by-id/nvme-WD_Blue_x"
+    echo "-j JSON output"
+    echo "-a When -j is passed, also get all attributes"
+    echo "-h help"
+    exit 0
+}
+
+json="{}"
+warning="false" # Global warning indicator for json output (at least one WARN log).
+
+while getopts "d:jah" arg; do
+  case $arg in
+    d) DEVICE=$OPTARG ;;
+    j) JSON_OUTPUT=0 ;;
+    a) ATTRIBUTES=0 ;;
+    h) usage ;;
+    *) usage ;;
+  esac
+done
+
+if ! [ -v DEVICE ]; then
+    echo "Missing argument -d <str> (device)"; usage
+fi
+
+
+
+
+
+################################################################################
 # Helper functions
 ################################################################################
 
@@ -101,6 +136,7 @@ function check_status {
 function ata_check_selftests {
     local smart_report=$1
     local lifetime_hours=$(echo "$smart_report" | jq .power_on_time.hours)
+    local temperature=$(echo "$smart_report" | jq .temperature.current)
     logger "Disk ${DEVICE} lifetime_hours: ${lifetime_hours}" "TRACE"
     if echo "$smart_report" | jq .ata_smart_self_test_log.standard.table[] &> /dev/null; then
         local most_recent_extended_test=$(echo "$smart_report" \
@@ -115,17 +151,20 @@ function ata_check_selftests {
     if [ -n "$most_recent_extended_test" ] && [ $delta -le $ATA_LATEST_SELFTEST ]; then
         logger "Disk ${DEVICE} last \"Extended offline\" selftest was ${delta} hours ago" "VERB"
     else
-        logger "Disk ${DEVICE} last \"Extended offline\" selftest was ${delta} > ${ATA_LATEST_SELFTEST} hours ago" "WARN"
+        logger "Disk ${DEVICE} last \"Extended offline\" selftest was ${delta} > ${ATA_LATEST_SELFTEST} hours ago" "WARN"; warning="true"
     fi
     local smart_self_err=$(echo $smart_report | jq .ata_smart_self_test_log.standard.error_count_total)
     # If a newer successful selftest is run, past failed selftest becomes outdated.
     local smart_self_err_outdated=$(echo $smart_report | jq .ata_smart_self_test_log.standard.error_count_outdated)
+    json=$(echo $json | jq --argjson temperature $temperature --argjson power_on_hours $lifetime_hours --argjson ata_last_test_hours $delta \
+        --argjson ata_test_error_count_total $smart_self_err --argjson ata_test_error_count_outdated $smart_self_err_outdated \
+        '. += {temperature:$temperature,power_on_hours:$power_on_hours,ata_last_test_hours:$ata_last_test_hours,ata_test_error_count_total:$ata_test_error_count_total,ata_test_error_count_outdated:$ata_test_error_count_outdated}')
     if [ $smart_self_err = "null" ] || [ $smart_self_err -eq 0 ]; then
         logger "Disk ${DEVICE} SMART selftest OK" "VERB"
         return 0
     elif [ $smart_self_err -eq $smart_self_err_outdated ]; then
         # If there is only outdated selftest error (all new selftests are passing), only log a warning.
-        logger "Disk ${DEVICE} SMART selftest error count (outdated): ${smart_self_err}" "WARN"
+        logger "Disk ${DEVICE} SMART selftest error count (outdated): ${smart_self_err}" "WARN"; warning="true"
         return 0
     else
         logger "Disk ${DEVICE} SMART selftest error count: ${smart_self_err}" "ERROR"
@@ -138,6 +177,9 @@ function ata_check_attributes {
     local _healthy=true
     local smart_attributes=$(echo $smart_report | jq .ata_smart_attributes.table)
     local smart_json=$(echo $smart_attributes | jq -c '.[] | {id, name, value, worst, thresh, raw_value: .raw.value}')
+    if [ $ATTRIBUTES -eq 0 ]; then
+        json=$(echo $json | jq '. += {ata_attributes:{}}')
+    fi
     for attribute in $smart_json; do
         logger "Disk ${DEVICE} SMART attribute ${attribute}" "TRACE"
         id=$(echo $attribute | jq '.id')
@@ -146,13 +188,18 @@ function ata_check_attributes {
         worst=$(echo $attribute | jq '.worst')
         thresh=$(echo $attribute | jq '.thresh')
         raw_value=$(echo $attribute | jq '.raw_value')
+        if [ $ATTRIBUTES -eq 0 ]; then
+            json=$(echo $json | jq --arg id $id --arg name "$name" --argjson value $value \
+                --argjson worst $worst --argjson thresh $thresh --argjson raw_value $raw_value \
+                '.ata_attributes += {$id:{name:$name,value:$value,worst:$worst,thresh:$thresh,raw_value:$raw_value}}')
+        fi
         if [ $value -le $thresh ]; then
             logger "Disk ${DEVICE} SMART bad current attribute: ${id} ${name} ${worst} <= ${thresh}" "ERROR"
             _healthy="false"
         elif [ $worst -le $thresh ]; then
             # If the current value is above the threshold
             # but have been below previously, report a warning only.
-            logger "Disk ${DEVICE} SMART bad worst attribute: ${id} ${name} ${worst} <= ${thresh}" "WARN"
+            logger "Disk ${DEVICE} SMART bad worst attribute: ${id} ${name} ${worst} <= ${thresh}" "WARN"; warning="true"
         fi
         if [ $raw_value -ne 0 ] && [[ $(echo "${ATA_CRITICALS[@]}" | fgrep -w $id) ]]; then
             logger "Disk ${DEVICE} SMART bad raw.value attribute: ${id} ${name} ${raw_value}" "ERROR"
@@ -171,8 +218,10 @@ function ata_check_attributes {
 function ata_check_errors {
     local smart_report=$1
     local smart_errors_count=$(echo $smart_report | jq .ata_smart_error_log.summary.count)
+    json=$(echo $json | jq --argjson ata_errors_count $smart_errors_count \
+        '. += {ata_errors_count:$ata_errors_count}')
     if [[ $smart_errors_count -gt 0 ]]; then
-        logger "Disk ${DEVICE} SMART errors count: ${smart_errors_count}" "WARN"
+        logger "Disk ${DEVICE} SMART errors count: ${smart_errors_count}" "WARN"; warning="true"
     else
         logger "Disk ${DEVICE} SMART errors count: ${smart_errors_count}" "VERB"
     fi
@@ -181,6 +230,9 @@ function ata_check_errors {
 function nvme_check_attributes {
     local smart_report=$1
     local _healthy=true
+    local lifetime_hours=$(echo "$smart_report" | jq .power_on_time.hours)
+    local temperature=$(echo "$smart_report" | jq .temperature.current)
+    logger "Disk ${DEVICE} lifetime_hours: ${lifetime_hours}" "TRACE"
     local smart_attributes=$(echo $smart_report | jq .nvme_smart_health_information_log)
     for name in $(echo "$smart_attributes" | jq -r 'keys[]'); do
         local value=$(echo "$smart_attributes" | jq -r ".$name")
@@ -191,9 +243,11 @@ function nvme_check_attributes {
             logger "Disk ${DEVICE} SMART bad attribute: ${name} ${value} > ${critical_threshold}" "ERROR"
             _healthy=false
         elif [[ -n $warning_threshold && $value -gt $warning_threshold ]]; then
-            logger "Disk ${DEVICE} SMART bad attribute: ${name} ${value} > ${warning_threshold}" "WARN"
+            logger "Disk ${DEVICE} SMART bad attribute: ${name} ${value} > ${warning_threshold}" "WARN"; warning="true"
         fi
     done
+    json=$(echo $json | jq --argjson temperature $temperature --argjson power_on_hours $lifetime_hours \
+        '. += {temperature:$temperature,power_on_hours:$power_on_hours}')
     if [ $_healthy = "true" ];then
         logger "Disk ${DEVICE} SMART attributes OK" "VERB"
         return 0
@@ -250,10 +304,10 @@ healthy="true"
         logger "Disk ${DEVICE} smartctl found prefail attributes <= threshold" "ERROR"; healthy="false"
     fi
     if (( SMART_REPORT_RETURN_CODE & 32 )); then
-        logger "Disk ${DEVICE} smartctl found prefail attributes <= threshold in the past" "WARN"
+        logger "Disk ${DEVICE} smartctl found prefail attributes <= threshold in the past" "WARN"; warning="true"
     fi
     if (( SMART_REPORT_RETURN_CODE & 64 )); then
-        logger "Disk ${DEVICE} smartctl found device errors in logs" "WARN"
+        logger "Disk ${DEVICE} smartctl found device errors in logs" "WARN"; warning="true"
     fi
     if (( SMART_REPORT_RETURN_CODE & 128 )); then
         logger "Disk ${DEVICE} smartctl found selftest errors" "ERROR"; healthy="false"
@@ -267,6 +321,9 @@ healthy="true"
     logger "Disk ${DEVICE} SMART not enabled" "ERROR"; exit 12
 }
 
+json=$(echo $json | jq --arg model_name "$MODEL_NAME" \
+    --arg serial_number "$SERIAL_NUMBER" --arg protocol "$DISK_PROTOCOL" \
+    '. += {model_name:$model_name,serial_number:$serial_number,protocol:$protocol}')
 DEVICE_NAME=$(echo "${MODEL_NAME} ${SERIAL_NUMBER} ${DISK_PROTOCOL}" | sed 's/[^a-zA-Z0-9]/_/g')
 
 # Overview entry log.
@@ -287,6 +344,9 @@ elif [ $DISK_PROTOCOL == "NVMe" ]; then
 else
     logger "Disk ${DEVICE} is using an unknown protocol ${DISK_PROTOCOL}" "ERROR"; exit 13
 fi
+
+json=$(echo $json | jq --argjson warning $warning --argjson healthy $healthy \
+    '. += {warning:$warning,healthy:$healthy}')
 
 if [ $healthy = "true" ]; then
     logger "Disk ${DEVICE} health OK" "INFO"
