@@ -6,43 +6,61 @@ zabbix_export:
       pages:
         - widgets:
             - type: svggraph
-              name: RAM↑/swap↓
+              name: RAM/swap
               width: '18'
               height: '3'
               fields:
                 - type: INTEGER
                   name: axisx
                   value: '0'
+                - type: STRING
+                  name: ds.0.color
+                  value: FF0000
                 - type: INTEGER
-                  name: ds.0.color_palette
+                  name: ds.0.fill
                   value: '0'
                 - type: STRING
                   name: ds.0.hosts.0
                   value: 'Zabbix server'
                 - type: STRING
                   name: ds.0.items.0
-                  value: 'Container * Memory usage total'
-                - type: STRING
-                  name: ds.0.items.1
-                  value: 'Host only memory usage'
+                  value: 'Host memory usage'
                 - type: INTEGER
-                  name: ds.0.stacked
-                  value: '1'
+                  name: ds.0.transparency
+                  value: '0'
                 - type: INTEGER
-                  name: ds.1.axisy
-                  value: '1'
+                  name: ds.0.width
+                  value: '2'
                 - type: STRING
                   name: ds.1.color
                   value: FF0000
+                - type: INTEGER
+                  name: ds.1.fill
+                  value: '0'
                 - type: STRING
                   name: ds.1.hosts.0
                   value: 'Zabbix server'
-                - type: INTEGER
-                  name: ds.1.invert_values
-                  value: '1'
                 - type: STRING
                   name: ds.1.items.0
                   value: 'Swap usage'
+                - type: INTEGER
+                  name: ds.1.transparency
+                  value: '0'
+                - type: INTEGER
+                  name: ds.1.width
+                  value: '2'
+                - type: INTEGER
+                  name: ds.2.color_palette
+                  value: '0'
+                - type: STRING
+                  name: ds.2.hosts.0
+                  value: 'Zabbix server'
+                - type: STRING
+                  name: ds.2.items.0
+                  value: 'Container * Memory usage total'
+                - type: INTEGER
+                  name: ds.2.stacked
+                  value: '1'
                 - type: INTEGER
                   name: legend
                   value: '0'
@@ -54,7 +72,7 @@ zabbix_export:
                   value: '0'
                 - type: INTEGER
                   name: show_hostnames
-                  value: '1'
+                  value: '2'
             - type: svggraph
               name: 'CPU core-equivalent'
               'y': '3'
@@ -90,7 +108,7 @@ zabbix_export:
                   value: '0'
                 - type: INTEGER
                   name: show_hostnames
-                  value: '1'
+                  value: '2'
             - type: svggraph
               name: 'Network IN↑/OUT↓'
               'y': '6'
@@ -126,10 +144,13 @@ zabbix_export:
                   value: 'Zabbix server'
                 - type: STRING
                   name: ds.1.items.0
-                  value: 'Interface enp4s0: Bits received'
+                  value: 'Interface eno1: Bits received'
                 - type: INTEGER
                   name: ds.1.transparency
                   value: '0'
+                - type: INTEGER
+                  name: ds.1.width
+                  value: '2'
                 - type: INTEGER
                   name: ds.2.color_palette
                   value: '0'
@@ -162,10 +183,13 @@ zabbix_export:
                   value: '1'
                 - type: STRING
                   name: ds.3.items.0
-                  value: 'Interface enp4s0: Bits sent'
+                  value: 'Interface eno1: Bits sent'
                 - type: INTEGER
                   name: ds.3.transparency
                   value: '0'
+                - type: INTEGER
+                  name: ds.3.width
+                  value: '2'
                 - type: INTEGER
                   name: lefty_unsigned
                   value: '1'
@@ -177,7 +201,7 @@ zabbix_export:
                   value: HESQP
                 - type: INTEGER
                   name: show_hostnames
-                  value: '1'
+                  value: '2'
             - type: svggraph
               name: 'Disk utilization and standby'
               'y': '9'
@@ -205,12 +229,18 @@ zabbix_export:
                 - type: STRING
                   name: ds.1.color
                   value: FF0000
+                - type: INTEGER
+                  name: ds.1.fill
+                  value: '0'
                 - type: STRING
                   name: ds.1.hosts.0
                   value: 'Zabbix server'
                 - type: STRING
                   name: ds.1.items.0
                   value: 'nvme* Disk utilization'
+                - type: INTEGER
+                  name: ds.1.transparency
+                  value: '0'
                 - type: INTEGER
                   name: ds.2.approximation
                   value: '4'
@@ -246,7 +276,7 @@ zabbix_export:
                   value: '0'
                 - type: INTEGER
                   name: show_hostnames
-                  value: '1'
+                  value: '2'
             - type: svggraph
               name: Temperatures
               x: '18'
@@ -274,12 +304,18 @@ zabbix_export:
                 - type: STRING
                   name: ds.1.color
                   value: FF0000
+                - type: INTEGER
+                  name: ds.1.fill
+                  value: '0'
                 - type: STRING
                   name: ds.1.hosts.0
                   value: 'Zabbix server'
                 - type: STRING
                   name: ds.1.items.0
                   value: 'Temperature * Value'
+                - type: INTEGER
+                  name: ds.1.transparency
+                  value: '0'
                 - type: INTEGER
                   name: legend
                   value: '0'
@@ -291,7 +327,7 @@ zabbix_export:
                   value: '0'
                 - type: INTEGER
                   name: show_hostnames
-                  value: '1'
+                  value: '2'
             - type: tablemodulerme
               name: 'Docker containers'
               x: '18'

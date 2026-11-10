@@ -9,6 +9,8 @@ LOGFILE_NAME="disk-health"
 JSON_OUTPUT=1
 ATTRIBUTES=1
 SILENT=1
+CHECK_ACTIVITY=/opt/salad-server/scripts/check-disk-activity.sh
+STANDBY_DELAY=600 # In seconds, setup on install with hdparm.
 
 function logger {
     if [ $JSON_OUTPUT -eq 1 ]; then
@@ -70,20 +72,16 @@ DEVICES=$(/sbin/smartctl --scan -j | jq -r .devices[].name)
 
 for device in $DEVICES; do
     if [[ $device =~ ^/dev/nvme[0-9]+$ ]]; then
-        for dev in /dev/nvmen[0-9]*; do
-            [[ -b $dev ]] || continue
-            [[ $(lsblk -dnro TYPE -- $dev) == disk ]] || continue
-            device_udevadm=$dev
-        done
+	device_udevadm="${device}n1"
     else
         device_udevadm=$device
     fi
     device_name=$(udevadm info --query=property --name=$device_udevadm | grep -Po '(?<=^ID_SERIAL=).*')
-    if /sbin/hdparm -C $device | grep standby &> /dev/null; then standby=true
+    if ! [[ $device =~ ^/dev/nvme[0-9]+$ ]] && (( $($CHECK_ACTIVITY $device) > $STANDBY_DELAY )); then standby=true
     else standby=false; fi
     json=$(echo $json | jq --arg device "$device" --arg device_name "$device_name" \
         --argjson standby "$standby" \
-        '. += {$device_name:{device:$device,standby:$standby}}')
+        '.[$device_name] = {device:$device,standby:$standby}')
     if [ $SILENT -eq 0 ] && [[ "$standby" == "true" ]];then
         logger "Disk ${device} skipped (in standby)" "VERB"
     else

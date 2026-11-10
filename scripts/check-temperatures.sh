@@ -5,6 +5,9 @@ set -e
 
 LOGFILE_NAME="temperatures"
 
+CHECK_ACTIVITY=/opt/salad-server/scripts/check-disk-activity.sh
+STANDBY_DELAY=600 # In seconds, setup on install with hdparm.
+
 function logger {
     local message=$1
     local loglevel=$2
@@ -76,7 +79,7 @@ cpu_temp=$(cat /sys/class/thermal/thermal_zone*/temp \
 
 if [[ $json != "" ]]; then
     json=$(echo $json | jq --arg target cpu --argjson temp $cpu_temp \
-        '. += {$target:$temp}')
+        '.[$target] = $temp')
 else
     if [ $cpu_temp -gt $CPU_THRESHOLD_ERROR ]; then
         logger "CPU temp ${cpu_temp} > ${CPU_THRESHOLD_ERROR}" "ERROR" "CPU"
@@ -90,16 +93,16 @@ fi
 if ! [ $short -eq 0 ]; then
     # Checks that we are using the root account.
     if ! [ "$(whoami)" == "root" ]; then
-        logger "Must be root for using smartctl and hdparm." "ERROR"; exit 12
+        logger "Must be root for using smartctl." "ERROR"; exit 12
     fi
     # Disks temperatures.
     devices=$(/sbin/smartctl --scan | grep -o "^[^ ]*")
     for device in $devices; do
-        if /sbin/hdparm -C $device | grep standby &> /dev/null; then
+        if ! [[ $device =~ ^/dev/nvme[0-9]+$ ]] && (( $($CHECK_ACTIVITY $device) > $STANDBY_DELAY )); then
             # Do not read the temp from a standby disk as it would wake it up.
             if [[ $json != "" ]]; then
                 json=$(echo $json | jq --arg target $device --argjson temp null \
-                    '. += {$target:$temp}')
+                    '.[$target] = $temp')
             else
                 logger "Disk ${device} temp NaN (in standby)" "VERB"
             fi
@@ -117,7 +120,7 @@ if ! [ $short -eq 0 ]; then
             } || {
                 if [[ $json != "" ]]; then
                     json=$(echo $json | jq --arg target $device --argjson temp null \
-                        '. += {$target:$temp}')
+                        '.[$target] = $temp')
                 else
                     logger "Disk ${device} SMART not enabled" "ERROR"
                 fi
@@ -125,7 +128,7 @@ if ! [ $short -eq 0 ]; then
             device_name=$(echo "${model_name} ${serial_number} ${disk_protocol}" | sed 's/[^a-zA-Z0-9]/_/g')
             if [[ $json != "" ]]; then
                 json=$(echo $json | jq --arg target $device --argjson temp $disk_temp \
-                    '. += {$target:$temp}')
+                    '.[$target] = $temp')
             else
                 if [ $disk_temp -gt $DISK_THRESHOLD_ERROR ]; then
                     logger "Disk ${device} temp ${disk_temp} > ${DISK_THRESHOLD_ERROR}" "ERROR" "$device_name"

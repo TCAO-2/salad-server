@@ -1,12 +1,13 @@
 services:
   postgres:
     image: postgres:18-alpine
+    container_name: zabbix-postgres
     environment:
       POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix_test_only
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - ./postgres:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -16,6 +17,7 @@ services:
 
   zabbix-server:
     image: zabbix/zabbix-server-pgsql:alpine-8.0-latest
+    container_name: zabbix-server
     environment:
       DB_SERVER_HOST: postgres
       POSTGRES_DB: zabbix
@@ -30,6 +32,7 @@ services:
 
   zabbix-web:
     image: zabbix/zabbix-web-nginx-pgsql:alpine-8.0-latest
+    container_name: zabbix-web
     environment:
       ZBX_SERVER_HOST: zabbix-server
       DB_SERVER_HOST: postgres

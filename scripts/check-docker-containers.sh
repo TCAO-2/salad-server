@@ -10,6 +10,11 @@ command -v du >/dev/null || { echo "du is required" >&2; exit 1; }
 IGNORE_MOUNTS=(
     "/mnt/data/movies"
     "/mnt/data/documents"
+    "/mnt/data/Data"
+    "/mnt/data/Films"
+    "/mnt/data/Z"
+    "/media"                # Jellyfin
+    "/mnt/data"             # samba
 )
 
 BACKUP_FOLDER="/mnt/data/salad-server/"

@@ -9,7 +9,6 @@ zabbix_export:
       name: salad-server
       templates:
         - name: 'Docker by Zabbix agent 2'
-        - name: 'Linux by Zabbix agent'
       groups:
         - name: Templates
       items:
@@ -53,20 +52,22 @@ zabbix_export:
           name: 'Docker containers raw'
           key: docker.containers.raw
           value_type: TEXT
+          timeout: 30s
         - uuid: 75e8ff45e553476c833f367b841d80eb
           name: 'Filesystems raw'
           key: filesystems.raw
           delay: 5m
           value_type: TEXT
+          timeout: 30s
           tags:
             - tag: component
               value: filesystem
-        - uuid: 9aa8f9839bf14e28b73f81138f3f78a6
-          name: 'Host only memory usage'
+        - uuid: 4a50664370b24e818d3b99588fb03b08
+          name: 'Host memory usage'
           type: CALCULATED
           key: host.memory.usage
           units: B
-          params: 'last(//vm.memory.size[total])-last(//vm.memory.size[available])-sum(last_foreach(//docker.container_stats.memory.usage_total[*]))'
+          params: 'last(//vm.memory.size[total])-last(//vm.memory.size[available])'
           tags:
             - tag: component
               value: memory
@@ -94,7 +95,9 @@ zabbix_export:
         - uuid: cb17532d4ccc446695e560bff9fcb3de
           name: 'mdadm raw'
           key: mdadm.raw
+          delay: 15m
           value_type: JSON
+          timeout: 30s
           tags:
             - tag: component
               value: mdadm
@@ -102,6 +105,7 @@ zabbix_export:
           name: 'Temperatures raw'
           key: temperatures.raw
           value_type: JSON
+          timeout: 30s
           tags:
             - tag: component
               value: temperature
@@ -360,10 +364,10 @@ zabbix_export:
             - uuid: a44a855fb5fd4d2ca9e00b297efd9e73
               name: 'Container {#NAME}: Backup age'
               type: CALCULATED
-              key: 'containers.backup["{#NAME}",age]'
+              key: 'containers.backup.age["{#NAME}"]'
               value_type: FLOAT
               units: d
-              params: '(now()-last(//containers.backup["{#NAME}",date]))/86400'
+              params: '(now()-last(//containers.backup.date["{#NAME}"]))/86400'
               tags:
                 - tag: component
                   value: backup
@@ -372,7 +376,7 @@ zabbix_export:
             - uuid: 5e75fbbca80d44499802d2dd25bc8140
               name: 'Container {#NAME}: Backup date'
               type: DEPENDENT
-              key: 'containers.backup["{#NAME}",date]'
+              key: 'containers.backup.date["{#NAME}"]'
               trends: '0'
               units: unixtime
               preprocessing:
@@ -395,13 +399,41 @@ zabbix_export:
                   value: backup
                 - tag: container
                   value: '{#NAME}'
+            - uuid: 47af6e61c4ba4058bc5c9cdf54784110
+              name: 'Container {#NAME}: CPU core usage'
+              type: CALCULATED
+              key: 'containers.cpu.coreusage["{#NAME}"]'
+              value_type: FLOAT
+              units: core
+              params: 'last(//docker.container_stats.cpu_pct_usage["{#NAME}"])/100'
+              tags:
+                - tag: component
+                  value: cpu
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: d7a963d61b3140749ce196d6e759b503
+              name: 'Container {#NAME}: Disk usage'
+              type: DEPENDENT
+              key: 'containers.disk.usage["{#NAME}"]'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$[''{#ID}''].disk_usage'
+              master_item:
+                key: docker.containers.raw
+              tags:
+                - tag: component
+                  value: images
+                - tag: container
+                  value: '{#NAME}'
             - uuid: 89583ae9f70e42bcad5db6a25a5d2356
               name: 'Container {#NAME}: Image age'
               type: CALCULATED
-              key: 'containers.image["{#NAME}",age]'
+              key: 'containers.image.age["{#NAME}"]'
               value_type: FLOAT
               units: d
-              params: '(now()-last(//containers.image["{#NAME}",creation]))/86400'
+              params: '(now()-last(//containers.image.creation["{#NAME}"]))/86400'
               tags:
                 - tag: component
                   value: images
@@ -410,7 +442,7 @@ zabbix_export:
             - uuid: 1ead0c322f4e43dca7d411c84dec5160
               name: 'Container {#NAME}: Image creation date'
               type: DEPENDENT
-              key: 'containers.image["{#NAME}",creation]'
+              key: 'containers.image.creation["{#NAME}"]'
               trends: '0'
               units: unixtime
               preprocessing:
@@ -433,26 +465,10 @@ zabbix_export:
                   value: images
                 - tag: container
                   value: '{#NAME}'
-            - uuid: d7a963d61b3140749ce196d6e759b503
-              name: 'Container {#NAME}: Disk usage'
-              type: DEPENDENT
-              key: 'containers["{#NAME}",disk]'
-              units: B
-              preprocessing:
-                - type: JSONPATH
-                  parameters:
-                    - '$[''{#ID}''].disk_usage'
-              master_item:
-                key: docker.containers.raw
-              tags:
-                - tag: component
-                  value: images
-                - tag: container
-                  value: '{#NAME}'
             - uuid: 464265a10002457e83904ec49ee9e577
               name: 'Container {#NAME}: Stack name'
               type: DEPENDENT
-              key: 'containers["{#NAME}",stack]'
+              key: 'containers.stack.name["{#NAME}"]'
               value_type: TEXT
               preprocessing:
                 - type: JSONPATH
@@ -463,6 +479,39 @@ zabbix_export:
               tags:
                 - tag: component
                   value: container
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: 55a7c3de562f4958b845853f3eb77042
+              name: 'Container {#NAME}: Network I/O bps'
+              type: CALCULATED
+              key: 'docker.networks.io_bps["{#NAME}"]'
+              units: bps
+              params: 'last(//docker.networks.rx_bps["{#NAME}"])+last(//docker.networks.tx_bps["{#NAME}"])'
+              tags:
+                - tag: component
+                  value: network
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: 903b57f564354b2ea38cc4dc2879932a
+              name: 'Container {#NAME}: Networks IN bps'
+              type: CALCULATED
+              key: 'docker.networks.rx_bps["{#NAME}"]'
+              units: bps
+              params: 'last(//docker.networks.rx_bytes["{#NAME}"])*8'
+              tags:
+                - tag: component
+                  value: network
+                - tag: container
+                  value: '{#NAME}'
+            - uuid: 2e3a04413f9942588d27b3b961bf4cc7
+              name: 'Container {#NAME}: Networks OUT bps'
+              type: CALCULATED
+              key: 'docker.networks.tx_bps["{#NAME}"]'
+              units: bps
+              params: 'last(//docker.networks.tx_bytes["{#NAME}"])*8'
+              tags:
+                - tag: component
+                  value: network
                 - tag: container
                   value: '{#NAME}'
           master_item:
@@ -602,6 +651,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].events'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -618,6 +668,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].name'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -634,6 +685,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].raid_level'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -656,6 +708,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].mdadm_return_code'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -672,6 +725,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].array_size'
+                  error_handler: DISCARD_VALUE
                 - type: MULTIPLIER
                   parameters:
                     - '1024'
@@ -706,6 +760,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].active_devices'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -721,6 +776,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].working_devices'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -736,6 +792,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].raid_devices'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -751,6 +808,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].failed_devices'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -766,6 +824,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].total_devices'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:
@@ -781,6 +840,7 @@ zabbix_export:
                 - type: JSONPATH
                   parameters:
                     - '$[''{#NAME}''].working_devices'
+                  error_handler: DISCARD_VALUE
               master_item:
                 key: mdadm.raw
               tags:

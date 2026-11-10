@@ -5,8 +5,11 @@
 | bkp-simple-rotate                | Keeps last 10 backups of a Docker service           | \<Docker stack name\>             |
 | check_data_integrity_from_report | Checks coherence from a pair of integrity reports   | \<src_report\> \<dst_report\>     |
 | check-all-disk-health            | Loops through all disks evaluating their healths    | [-j] [-a] [-s]                    |
+| check-disk-activity              | Returns last known activity of a disk in seconds    | \<device path\>                   |
 | check-disk-health                | Reads SMART data of a disk to evaluate its health   | -d \<device path\> [-j] [-a]      |
 | check-disk-usage                 | Checks usage of every partitions                    | [-j] [-p] \<device_path\> [-a]    |
+| check-docker-containers          | Returns Docker containers metadata                  |                                   |
+| check-mdadm                      | Returns mdadm arrays metadata                       |                                   |
 | check-mem-usage                  | Checks RAM and SWAP usage                           |                                   |
 | check-temperatures               | Checks CPU and disks temperatures                   | [-j] [-s]                         |
 | create-data-integrity-report     | Hashes all files of a directory storing into a file | -d \<src dir\> -f \<report file\> |
@@ -154,6 +157,12 @@ flowchart LR
 ## Sample crontab
 
 ```bash
+# Check disk activity, used to prevent taking these out of sleep by the monitoring.
+* * * * * /opt/salad-server/scripts/check-disk-activity.sh /dev/sda
+* * * * * /opt/salad-server/scripts/check-disk-activity.sh /dev/sdb
+* * * * * /opt/salad-server/scripts/check-disk-activity.sh /dev/sdc
+* * * * * /opt/salad-server/scripts/check-disk-activity.sh /dev/sdd
+
 # Host security updates and restart if needed - everyday 3:30 AM
 30 03 * * * /usr/bin/unattended-upgrade
 
@@ -178,6 +187,7 @@ flowchart LR
 38 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade samba
 40 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh minecraft
 44 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh nextcloud
+46 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade zabbix
 
 # Backups rotate - everyday morning
 37 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh duckdns
@@ -185,10 +195,15 @@ flowchart LR
 41 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh jellyfin
 43 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh samba
 45 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh minecraft
+47 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh nextcloud
+49 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh zabbix
 
 # Memory usage - Every hour
 01 * * * * /opt/salad-server/scripts/check-mem-usage.sh
 
 # Temperatures - Every hour
 02 * * * * /opt/salad-server/scripts/check-temperatures.sh
+
+# Nextcloud cron background job
+*/5 * * * * /bin/docker exec -u www-data nextcloud php -f /var/www/html/cron.php
 ```

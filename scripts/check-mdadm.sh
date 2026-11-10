@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -eo pipefail
 export LC_ALL=C
+shopt -s nullglob
+
+CHECK_ACTIVITY=/opt/salad-server/scripts/check-disk-activity.sh
+STANDBY_DELAY=600 # seconds
 
 command -v mdadm >/dev/null || { echo "mdadm is required" >&2; exit 1; }
 command -v jq >/dev/null || { echo "jq is required" >&2; exit 1; }
@@ -29,7 +33,6 @@ get_field() {
     ' <<< "$detail"
 }
 
-# Return the first field only if it is an integer.
 get_number() {
     local value
     value=$(get_field "$1")
@@ -41,12 +44,117 @@ get_number() {
     }'
 }
 
-scan=$(mdadm --detail --scan)
+# Recursively follow stacked block devices to their leaf devices.
+# If a leaf is a partition, check its whole parent disk instead.
+collect_leaf_devices() {
+    local name="$1"
+    local sys="/sys/class/block/$name"
+    local slave resolved leaf found=0
+
+    [[ -e "$sys" ]] || return 1
+
+    for slave in "$sys"/slaves/*; do
+        [[ -e "$slave" ]] || {
+            [[ -L "$slave" ]] && return 1
+            continue
+        }
+        found=1
+        collect_leaf_devices "${slave##*/}" || return 1
+    done
+
+    if (( found )); then
+        return 0
+    fi
+
+    resolved=$(readlink -f -- "$sys") || return 1
+    if [[ -r "$sys/partition" ]]; then
+        leaf=$(basename -- "$(dirname -- "$resolved")")
+    else
+        leaf=$name
+    fi
+
+    [[ -b "/dev/$leaf" ]] || return 1
+    printf '/dev/%s\n' "$leaf"
+}
+
+json_array() {
+    if (($# == 0)); then
+        printf '[]'
+    else
+        printf '%s\n' "$@" | jq -R . | jq -s .
+    fi
+}
+
 rows=()
 
-while IFS= read -r array; do
-    [[ -n "$array" ]] || continue
+# Discover MD arrays through sysfs, so no mdadm command is needed for discovery.
+for md_path in /sys/block/md*; do
+    [[ -d "$md_path/md" ]] || continue
 
+    md_name=${md_path##*/}
+    array="/dev/$md_name"
+    sleeping_devices=()
+    check_errors=()
+    declare -A seen_disks=()
+
+    if [[ ! -b "$array" ]]; then
+        check_errors+=("$array: block device node unavailable")
+    fi
+
+    member_links=("$md_path"/md/dev-*/block)
+    if ((${#member_links[@]} == 0)); then
+        check_errors+=("$md_name: no member devices found in sysfs")
+    fi
+
+    for member_link in "${member_links[@]}"; do
+        if [[ ! -e "$member_link" ]]; then
+            check_errors+=("$member_link: member device unavailable")
+            continue
+        fi
+
+        member_sys=$(readlink -f -- "$member_link") || {
+            check_errors+=("$member_link: cannot resolve member device")
+            continue
+        }
+        member_name=${member_sys##*/}
+
+        if ! leaf_text=$(collect_leaf_devices "$member_name"); then
+            check_errors+=("$member_name: cannot resolve underlying disk")
+            continue
+        fi
+
+        while IFS= read -r disk; do
+            [[ -n "$disk" ]] || continue
+            [[ ${seen_disks[$disk]+yes} ]] && continue
+            seen_disks[$disk]=1
+
+            if age=$("$CHECK_ACTIVITY" "$disk"); then
+                if [[ ! "$age" =~ ^[0-9]+$ ]]; then
+                    check_errors+=("$disk: activity checker returned a non-integer")
+                elif (( age > STANDBY_DELAY )); then
+                    sleeping_devices+=("$disk")
+                fi
+            else
+                check_errors+=("$disk: activity check failed")
+            fi
+        done <<< "$leaf_text"
+    done
+
+    if ((${#sleeping_devices[@]})); then
+        rows+=("$(jq -n --arg device "$array" \
+            '{($device): {state: "standby"}}')")
+        continue
+    fi
+
+    if ((${#check_errors[@]})); then
+        printf 'Skipping %s: %s\n' "$array" "${check_errors[*]}" >&2
+        rows+=("$(jq -n --arg device "$array" \
+            '{($device): {state: "unknown"}}')")
+        continue
+    fi
+
+    # This is the first mdadm invocation for this array; all its member
+    # disks passed the activity check.
     if detail=$(mdadm --detail "$array" 2>/dev/null); then
         mdadm_return_code=0
     else
@@ -94,10 +202,14 @@ while IFS= read -r array; do
                 failed_devices: (try ($failed_devices | tonumber) catch null),
                 spare_devices: (try ($spare_devices | tonumber) catch null),
                 events: (try ($events | tonumber) catch null),
-                mdadm_return_code: ($mdadm_return_code | tonumber)
+                mdadm_return_code: ($mdadm_return_code | tonumber),
+                skipped: false,
+                skipped_reason: null,
+                sleeping_devices: [],
+                check_errors: []
             }
         }')")
-done < <(awk '$1 == "ARRAY" { print $2 }' <<< "$scan")
+done
 
 if ((${#rows[@]})); then
     printf '%s\n' "${rows[@]}" | jq -s 'add'
