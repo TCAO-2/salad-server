@@ -6,5 +6,5 @@ zabbix.salad.local {
 	tls internal
 	@not_allowed not remote_ip 192.168.0.0/16
 	respond @not_allowed "Forbidden" 403
-	reverse_proxy zabbix-web:8080
+	reverse_proxy zabbix_web:8080
 }

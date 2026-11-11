@@ -49,7 +49,7 @@ Connect to the web interface (default login Admin password zabbix):
 - Change the network interfaces in the network widget for yours
 - Change the motherboard chipset in the temperatures widget for yours
 - Change the colors thresholds to your needs
-- Recommended: in Users > Authentication > MFA settings, enable TOTP
+- Enable MFA (recommended) https://www.zabbix.com/documentation/current/en/manual/web_interface/frontend_sections/users/authentication/mfa
 
 # Dashboard colors
 

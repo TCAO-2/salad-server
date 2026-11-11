@@ -188,6 +188,7 @@ flowchart LR
 40 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh minecraft
 44 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh nextcloud
 46 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade zabbix
+48 04 * * * /opt/salad-server/scripts/docker-cold-bkp-upgrade.sh --only-on-upgrade caddy-internal
 
 # Backups rotate - everyday morning
 37 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh duckdns
@@ -197,6 +198,7 @@ flowchart LR
 45 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh minecraft
 47 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh nextcloud
 49 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh zabbix
+51 04 * * * /opt/salad-server/scripts/bkp-simple-rotate.sh caddy-internal
 
 # Memory usage - Every hour
 01 * * * * /opt/salad-server/scripts/check-mem-usage.sh
