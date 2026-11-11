@@ -1,7 +1,7 @@
 services:
-  postgres:
+  zabbix_postgres:
     image: postgres:18-alpine
-    container_name: zabbix-postgres
+    container_name: zabbix_postgres
     environment:
       POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
@@ -13,29 +13,32 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - zabbix_backend
     restart: unless-stopped
 
-  zabbix-server:
+  zabbix_server:
     image: zabbix/zabbix-server-pgsql:alpine-8.0-latest
-    container_name: zabbix-server
+    container_name: zabbix_server
     environment:
-      DB_SERVER_HOST: postgres
+      DB_SERVER_HOST: zabbix_postgres
       POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix_test_only
     depends_on:
-      postgres:
+      zabbix_postgres:
         condition: service_healthy
-    ports:
-      - "127.0.0.1:10051:10051" # If you monitor only the server itself.
+    networks:
+      - zabbix_backend
+      - bridge
     restart: unless-stopped
 
-  zabbix-web:
+  zabbix_web:
     image: zabbix/zabbix-web-nginx-pgsql:alpine-8.0-latest
-    container_name: zabbix-web
+    container_name: zabbix_web
     environment:
-      ZBX_SERVER_HOST: zabbix-server
-      DB_SERVER_HOST: postgres
+      ZBX_SERVER_HOST: zabbix_server
+      DB_SERVER_HOST: zabbix_postgres
       POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix_test_only
@@ -43,7 +46,18 @@ services:
     volumes:
       - ./zabbix-web/modules:/usr/share/zabbix/modules:ro
     depends_on:
-      - zabbix-server
+      - zabbix_server
     ports:
       - 8080:8080
+    networks:
+      - zabbix_backend
+      - bridge
     restart: unless-stopped
+
+networks:
+  zabbix_backend:
+    # Backend network without WAN access.
+    driver: bridge
+    internal: true
+  bridge:
+    driver: bridge

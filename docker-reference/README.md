@@ -3,14 +3,16 @@
 The Debian host OS do not provides any network service by itself.
 Each independent service is managed by a docker stack, making it easier to manage.
 
-| Stack type    | Stack name | Description                                                    |
-|---------------|------------|----------------------------------------------------------------|
-| DNS provider  | duckdns    | Agent checking your public IP to keep your DNS name up to date |
-| HTTP service  | jellyfin   | Private streaming web interface for your media                 |
-| reverse proxy | caddy      | HTTPS redirects traffic to HTTP services using subdomains      |
-| game server   | minecraft  | Minecraft Server                                               |
-| file share    | samba      | Windows share for your local network                           |
-| cloud         | nextcloud  | Provides web interface including drive, office, calendar       |
+| Stack type    | Stack name  | Description                                                    |
+|---------------|-------------|----------------------------------------------------------------|
+| reverse proxy | caddy       | HTTPS redirects traffic to HTTP services using subdomains      |
+| reverse proxy | caddy-local | For internal network use with internal CA                      |
+| DNS provider  | duckdns     | Agent checking your public IP to keep your DNS name up to date |
+| HTTP service  | jellyfin    | Private streaming web interface for your media                 |
+| game server   | minecraft   | Minecraft Server                                               |
+| cloud         | nextcloud   | Provides web interface including drive, office, calendar       |
+| file share    | samba       | Windows share for your local network                           |
+| monitoring    | zabbix      | Provides dashboard and alerting for the server                 |
 
 # Common guideline
 

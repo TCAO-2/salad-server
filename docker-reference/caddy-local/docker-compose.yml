@@ -1,0 +1,21 @@
+services:
+  caddy_internal:
+    image: caddy:latest
+    container_name: caddy_internal
+    cap_add:
+      - NET_BIND_SERVICE
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./site:/srv
+      - ./data:/data
+      - ./config:/config
+    ports:
+      - 8443:443/tcp
+    networks:
+      - zabbix_bridge         # Comment if you dont use zabbix.
+    restart: unless-stopped
+
+networks:
+  zabbix_bridge:              # Comment if you dont use zabbix.
+    name: zabbix_bridge       # Comment if you dont use zabbix.
+    external: true            # Comment if you dont use zabbix.
