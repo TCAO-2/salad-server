@@ -262,6 +262,12 @@ zabbix_export:
                 - type: INTEGER
                   name: ds.2.type
                   value: '2'
+                - type: STRING
+                  name: lefty_max
+                  value: '100'
+                - type: STRING
+                  name: lefty_min
+                  value: '0'
                 - type: INTEGER
                   name: legend
                   value: '0'
@@ -312,9 +318,24 @@ zabbix_export:
                   value: 'Zabbix server'
                 - type: STRING
                   name: ds.1.items.0
-                  value: 'Temperature * Value'
+                  value: 'Temperature CPU'
                 - type: INTEGER
                   name: ds.1.transparency
+                  value: '0'
+                - type: STRING
+                  name: ds.2.color
+                  value: FFD54F
+                - type: INTEGER
+                  name: ds.2.fill
+                  value: '0'
+                - type: STRING
+                  name: ds.2.hosts.0
+                  value: 'Zabbix server'
+                - type: STRING
+                  name: ds.2.items.0
+                  value: 'Temperature pch_cannonlake-virtual-0-temp1'
+                - type: INTEGER
+                  name: ds.2.transparency
                   value: '0'
                 - type: INTEGER
                   name: legend
@@ -388,28 +409,64 @@ zabbix_export:
                   value: '0'
                 - type: STRING
                   name: columns.1.thresholds.1.color
-                  value: FFF9C4
+                  value: E2F0C5
                 - type: STRING
                   name: columns.1.thresholds.1.threshold
-                  value: '1e9'
+                  value: '500e6'
                 - type: STRING
                   name: columns.1.thresholds.2.color
-                  value: FFECB3
+                  value: F0F4C3
                 - type: STRING
                   name: columns.1.thresholds.2.threshold
-                  value: '4e9'
+                  value: '1e9'
                 - type: STRING
                   name: columns.1.thresholds.3.color
-                  value: FFCC80
+                  value: F6F6C4
                 - type: STRING
                   name: columns.1.thresholds.3.threshold
-                  value: '8e9'
+                  value: '2e9'
                 - type: STRING
                   name: columns.1.thresholds.4.color
-                  value: FF465C
+                  value: FFF9C4
                 - type: STRING
                   name: columns.1.thresholds.4.threshold
+                  value: '4e9'
+                - type: STRING
+                  name: columns.1.thresholds.5.color
+                  value: FFF2BA
+                - type: STRING
+                  name: columns.1.thresholds.5.threshold
+                  value: '6e9'
+                - type: STRING
+                  name: columns.1.thresholds.6.color
+                  value: FFECB3
+                - type: STRING
+                  name: columns.1.thresholds.6.threshold
+                  value: '8e9'
+                - type: STRING
+                  name: columns.1.thresholds.7.color
+                  value: FFDC9A
+                - type: STRING
+                  name: columns.1.thresholds.7.threshold
+                  value: '10e9'
+                - type: STRING
+                  name: columns.1.thresholds.8.color
+                  value: FFCC80
+                - type: STRING
+                  name: columns.1.thresholds.8.threshold
                   value: '12e9'
+                - type: STRING
+                  name: columns.1.thresholds.9.color
+                  value: FF9072
+                - type: STRING
+                  name: columns.1.thresholds.9.threshold
+                  value: '16e9'
+                - type: STRING
+                  name: columns.1.thresholds.10.color
+                  value: FF465C
+                - type: STRING
+                  name: columns.1.thresholds.10.threshold
+                  value: '20e9'
                 - type: STRING
                   name: columns.2.column_title
                   value: CPU
@@ -427,28 +484,64 @@ zabbix_export:
                   value: '0'
                 - type: STRING
                   name: columns.2.thresholds.1.color
-                  value: FFF9C4
+                  value: E2F0C5
                 - type: STRING
                   name: columns.2.thresholds.1.threshold
-                  value: '100'
+                  value: '5'
                 - type: STRING
                   name: columns.2.thresholds.2.color
-                  value: FFECB3
+                  value: F0F4C3
                 - type: STRING
                   name: columns.2.thresholds.2.threshold
-                  value: '200'
+                  value: '10'
                 - type: STRING
                   name: columns.2.thresholds.3.color
-                  value: FFCC80
+                  value: F6F6C4
                 - type: STRING
                   name: columns.2.thresholds.3.threshold
-                  value: '300'
+                  value: '25'
                 - type: STRING
                   name: columns.2.thresholds.4.color
-                  value: FF465C
+                  value: FFF9C4
                 - type: STRING
                   name: columns.2.thresholds.4.threshold
-                  value: '400'
+                  value: '50'
+                - type: STRING
+                  name: columns.2.thresholds.5.color
+                  value: FFF2BA
+                - type: STRING
+                  name: columns.2.thresholds.5.threshold
+                  value: '75'
+                - type: STRING
+                  name: columns.2.thresholds.6.color
+                  value: FFECB3
+                - type: STRING
+                  name: columns.2.thresholds.6.threshold
+                  value: '100'
+                - type: STRING
+                  name: columns.2.thresholds.7.color
+                  value: FFDC9A
+                - type: STRING
+                  name: columns.2.thresholds.7.threshold
+                  value: '160'
+                - type: STRING
+                  name: columns.2.thresholds.8.color
+                  value: FFCC80
+                - type: STRING
+                  name: columns.2.thresholds.8.threshold
+                  value: '220'
+                - type: STRING
+                  name: columns.2.thresholds.9.color
+                  value: FF9072
+                - type: STRING
+                  name: columns.2.thresholds.9.threshold
+                  value: '300'
+                - type: STRING
+                  name: columns.2.thresholds.10.color
+                  value: FF465C
+                - type: STRING
+                  name: columns.2.thresholds.10.threshold
+                  value: '350'
                 - type: STRING
                   name: columns.3.column_title
                   value: 'Net I/O'
@@ -505,28 +598,64 @@ zabbix_export:
                   value: '0'
                 - type: STRING
                   name: columns.4.thresholds.1.color
-                  value: FFF9C4
+                  value: E2F0C5
                 - type: STRING
                   name: columns.4.thresholds.1.threshold
-                  value: '1e9'
+                  value: '500e6'
                 - type: STRING
                   name: columns.4.thresholds.2.color
-                  value: FFECB3
+                  value: F0F4C3
                 - type: STRING
                   name: columns.4.thresholds.2.threshold
-                  value: '5e9'
+                  value: '1e9'
                 - type: STRING
                   name: columns.4.thresholds.3.color
-                  value: FFCC80
+                  value: F6F6C4
                 - type: STRING
                   name: columns.4.thresholds.3.threshold
-                  value: '10e9'
+                  value: '2e9'
                 - type: STRING
                   name: columns.4.thresholds.4.color
-                  value: FF465C
+                  value: FFF9C4
                 - type: STRING
                   name: columns.4.thresholds.4.threshold
+                  value: '5e9'
+                - type: STRING
+                  name: columns.4.thresholds.5.color
+                  value: FFF2BA
+                - type: STRING
+                  name: columns.4.thresholds.5.threshold
+                  value: '10e9'
+                - type: STRING
+                  name: columns.4.thresholds.6.color
+                  value: FFECB3
+                - type: STRING
+                  name: columns.4.thresholds.6.threshold
+                  value: '15e9'
+                - type: STRING
+                  name: columns.4.thresholds.7.color
+                  value: FFDC9A
+                - type: STRING
+                  name: columns.4.thresholds.7.threshold
                   value: '20e9'
+                - type: STRING
+                  name: columns.4.thresholds.8.color
+                  value: FFCC80
+                - type: STRING
+                  name: columns.4.thresholds.8.threshold
+                  value: '30e9'
+                - type: STRING
+                  name: columns.4.thresholds.9.color
+                  value: FF9072
+                - type: STRING
+                  name: columns.4.thresholds.9.threshold
+                  value: '40e9'
+                - type: STRING
+                  name: columns.4.thresholds.10.color
+                  value: FF465C
+                - type: STRING
+                  name: columns.4.thresholds.10.threshold
+                  value: '50e9'
                 - type: STRING
                   name: columns.5.column_title
                   value: Update
@@ -544,28 +673,58 @@ zabbix_export:
                   value: '0'
                 - type: STRING
                   name: columns.5.thresholds.1.color
-                  value: FFF9C4
+                  value: E2F0C5
                 - type: STRING
                   name: columns.5.thresholds.1.threshold
                   value: '10'
                 - type: STRING
                   name: columns.5.thresholds.2.color
-                  value: FFECB3
+                  value: F0F4C3
                 - type: STRING
                   name: columns.5.thresholds.2.threshold
                   value: '20'
                 - type: STRING
                   name: columns.5.thresholds.3.color
-                  value: FFCC80
+                  value: F6F6C4
                 - type: STRING
                   name: columns.5.thresholds.3.threshold
-                  value: '40'
+                  value: '30'
                 - type: STRING
                   name: columns.5.thresholds.4.color
-                  value: FF465C
+                  value: FFF9C4
                 - type: STRING
                   name: columns.5.thresholds.4.threshold
-                  value: '90'
+                  value: '60'
+                - type: STRING
+                  name: columns.5.thresholds.5.color
+                  value: FFECB3
+                - type: STRING
+                  name: columns.5.thresholds.5.threshold
+                  value: '80'
+                - type: STRING
+                  name: columns.5.thresholds.6.color
+                  value: FFDC9A
+                - type: STRING
+                  name: columns.5.thresholds.6.threshold
+                  value: '100'
+                - type: STRING
+                  name: columns.5.thresholds.7.color
+                  value: FFCC80
+                - type: STRING
+                  name: columns.5.thresholds.7.threshold
+                  value: '120'
+                - type: STRING
+                  name: columns.5.thresholds.8.color
+                  value: FF9072
+                - type: STRING
+                  name: columns.5.thresholds.8.threshold
+                  value: '160'
+                - type: STRING
+                  name: columns.5.thresholds.9.color
+                  value: FF465C
+                - type: STRING
+                  name: columns.5.thresholds.9.threshold
+                  value: '180'
                 - type: STRING
                   name: columns.6.column_title
                   value: Bkp
@@ -759,28 +918,34 @@ zabbix_export:
                   value: '0'
                 - type: STRING
                   name: columns.0.thresholds.1.color
-                  value: FFF9C4
+                  value: F0F4C3
                 - type: STRING
                   name: columns.0.thresholds.1.threshold
                   value: '60'
                 - type: STRING
                   name: columns.0.thresholds.2.color
-                  value: FFECB3
+                  value: FFF9C4
                 - type: STRING
                   name: columns.0.thresholds.2.threshold
                   value: '70'
                 - type: STRING
                   name: columns.0.thresholds.3.color
-                  value: FFCC80
+                  value: FFECB3
                 - type: STRING
                   name: columns.0.thresholds.3.threshold
                   value: '80'
                 - type: STRING
                   name: columns.0.thresholds.4.color
-                  value: FF465C
+                  value: FFCC80
                 - type: STRING
                   name: columns.0.thresholds.4.threshold
                   value: '90'
+                - type: STRING
+                  name: columns.0.thresholds.5.color
+                  value: FF465C
+                - type: STRING
+                  name: columns.0.thresholds.5.threshold
+                  value: '95'
                 - type: STRING
                   name: columns.1.column_title
                   value: Avail
@@ -890,28 +1055,40 @@ zabbix_export:
                   value: '0'
                 - type: STRING
                   name: columns.1.thresholds.1.color
-                  value: FFF9C4
+                  value: F0F4C3
                 - type: STRING
                   name: columns.1.thresholds.1.threshold
-                  value: '20000'
+                  value: '20e3'
                 - type: STRING
                   name: columns.1.thresholds.2.color
-                  value: FFECB3
+                  value: FFF9C4
                 - type: STRING
                   name: columns.1.thresholds.2.threshold
-                  value: '40000'
+                  value: '40e3'
                 - type: STRING
                   name: columns.1.thresholds.3.color
-                  value: FFCC80
+                  value: FFECB3
                 - type: STRING
                   name: columns.1.thresholds.3.threshold
-                  value: '60000'
+                  value: '60e3'
                 - type: STRING
                   name: columns.1.thresholds.4.color
-                  value: FF465C
+                  value: FFCC80
                 - type: STRING
                   name: columns.1.thresholds.4.threshold
-                  value: '80000'
+                  value: '80e3'
+                - type: STRING
+                  name: columns.1.thresholds.5.color
+                  value: FF9072
+                - type: STRING
+                  name: columns.1.thresholds.5.threshold
+                  value: '100e3'
+                - type: STRING
+                  name: columns.1.thresholds.6.color
+                  value: FF465C
+                - type: STRING
+                  name: columns.1.thresholds.6.threshold
+                  value: '120e3'
                 - type: STRING
                   name: columns.2.column_title
                   value: 🔥

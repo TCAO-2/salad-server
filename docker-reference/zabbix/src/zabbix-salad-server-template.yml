@@ -871,19 +871,23 @@ zabbix_export:
           key: temperatures.discovery
           item_prototypes:
             - uuid: e91eb6b7cb914ef7beb0f53787c7aa2b
-              name: 'Temperature {#NAME}: Value'
+              name: 'Temperature {#NAME}'
               type: DEPENDENT
-              key: 'temperatures["{#NAME}",value]'
+              key: 'temperatures["{#NAME}"]'
               units: °C
               preprocessing:
                 - type: JSONPATH
                   parameters:
-                    - '$[''{#NAME}'']'
+                    - '$[''{#DEVICE}''][''{#ZONE}'']'
               master_item:
                 key: temperatures.raw
               tags:
                 - tag: component
                   value: temperature
+                - tag: device
+                  value: '{#DEVICE}'
+                - tag: zone
+                  value: '{#ZONE}'
           master_item:
             key: temperatures.raw
           preprocessing:
@@ -892,13 +896,28 @@ zabbix_export:
                 - |
                   var output = { "data": [] };
                   const parsedValue = JSON.parse(value);
-                  const targets = Object.keys(parsedValue);
-                  for (var i=0; i < targets.length; i++) {
-                  	const target = targets[i];
-                  	const entry = parsedValue[target];
-                  	output.data.push({
-                  		"{#NAME}": target
-                  	});
+                  const devices = Object.keys(parsedValue);
+                  for (var i=0; i < devices.length; i++) {
+                  	const device = devices[i];
+                  	const device_data = parsedValue[device];
+                  	const zones = Object.keys(device_data)
+                  	for (var j=0; j < zones.length; j++) {
+                  		const zone = zones[j];
+                  		const zone_data = device_data[zone];
+                  		var name = device + "-" + zone;
+                  		if (device == "coretemp-isa-0000") {
+                  			if (zone == "Package id 0") {
+                  				name = "CPU";
+                  			} else {
+                  				name = "CPU" + "-" + zone;
+                  			}
+                  		}
+                  		output.data.push({
+                  			"{#DEVICE}": device,
+                  			"{#ZONE}": zone,
+                  			"{#NAME}": name
+                  		});
+                  	}
                   }
                   return JSON.stringify(output);
       valuemaps:

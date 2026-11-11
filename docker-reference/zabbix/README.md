@@ -46,4 +46,25 @@ Connect to the web interface (default login Admin password zabbix):
 - Import src/zabbix-salad-server-templates.yml in Data collection > Templates
 - Go to Data collection > Hosts and change the interface to the IP address of the host then add salad-server template to Zabbix server
 - Go to Dashboards and import src/zabbix-salad-server-dashboard.yml
-- Change the network interfaces in the network widget for yours   
+- Change the network interfaces in the network widget for yours
+- Change the motherboard chipset in the temperatures widget for yours
+- Change the colors thresholds to your needs
+
+# Dashboard colors
+
+I am using pastel colors everywhere for consistency.
+Red is only used for critical to catch the eye only where this is necessary.
+
+| hex code | color  | meaning                     |
+|----------|--------|-----------------------------|
+| FF465C   | red    | immediate action required   |
+| FF9072   |        |                             |
+| FFCC80   | orange | soon action required        |
+| FFDC9A   |        |                             |
+| FFECB3   |        |                             |
+| FFF2BA   |        |                             |
+| FFF9C4   | yellow | good enough condition       |
+| F6F6C4   |        |                             |
+| F0F4C3   |        |                             |
+| E2F0C5   |        |                             |
+| DCEDC8   | green  | perfect                     |

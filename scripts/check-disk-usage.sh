@@ -101,7 +101,7 @@ $file_sys_usage | grep '^/dev.*' | tr -s " " | ( while read line; do
     pcent=$(echo $line | cut -d " " -f 3 | sed 's/.\{1\}$//')
     size=$(echo $line | cut -d " " -f 4)
     avail=$(echo $line | cut -d " " -f 5)
-    used=$(echo $line | cut -d " " -f 5)
+    used=$(echo $line | cut -d " " -f 6)
     if [[ "$path" != "" ]] && [[ "$argument" != "" ]]; then
         echo ${!argument}
         exit 0
@@ -110,7 +110,7 @@ $file_sys_usage | grep '^/dev.*' | tr -s " " | ( while read line; do
     if [[ $json != "" ]]; then
         json=$(echo $json | jq --arg target $target --arg source $source --argjson pcent $pcent \
             --argjson size $size --argjson avail $avail --argjson used $used  \
-            '. += {$target:{source:$source,pcent:$pcent,size:$size,avail:$avail,used:$used}}')
+            '. += {($target):{source:$source,pcent:$pcent,size:$size,avail:$avail,used:$used}}')
     else
         if [ $pcent -gt $THRESHOLD_ERROR ]; then
             logger "${target} usage ${pcent}% over ${THRESHOLD_ERROR}%." "ERROR" $log_filename
